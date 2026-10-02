@@ -12,7 +12,9 @@ forces you to reconstruct by eye.
 ## Status
 
 Early build. Scaffold + PRD + build plan landed 2026-10-01; one task/day proceeds from
-`BUILD_PLAN.md`. Current task: **M1-T1 — land the React Three Fiber viewport**.
+`BUILD_PLAN.md`. The R3F viewport (M1-T1) is landed — an empty scene wired into the app
+shell, waiting on the trace data layer to give it something to draw. Next: **M1-T2 —
+add the lint/format/typecheck/vitest/build gate and dev scripts**.
 
 ## Stack
 
