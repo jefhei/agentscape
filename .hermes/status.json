@@ -2,8 +2,8 @@
   "version": 1,
   "project": "agentscape",
   "current_milestone": "M1 — Foundation, Trace Contract & Data Layer",
-  "current_task": "M1-T1",
-  "completed_tasks": [],
+  "current_task": "M1-T2",
+  "completed_tasks": ["M1-T1"],
   "milestones": [
     {
       "id": "M1",

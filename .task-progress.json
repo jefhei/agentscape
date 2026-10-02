@@ -1,4 +1,22 @@
 {
   "project": "agentscape",
-  "tasks": {}
+  "tasks": {
+    "M1-T1": {
+      "status": "complete",
+      "date": "2026-10-02",
+      "title": "Land the React Three Fiber viewport + app shell wiring (empty scene)",
+      "files_modified": [
+        "src/App.tsx",
+        "src/App.css",
+        "src/Viewport.tsx",
+        "src/App.test.tsx",
+        "README.md"
+      ],
+      "tests_added": [
+        "src/App.test.tsx — 3 tests: header renders title + thesis; the 3D viewport (data-testid=viewport) with an R3F <canvas> is mounted inside <main>; the 'viewport ready' chip appears after the Canvas onCreated boot callback fires"
+      ],
+      "verification": "lint 0w/0e (8 files); typecheck clean; test 4/4 passed (2 files, +3 new); build green (337ms); prettier clean on touched files",
+      "notes": "R3F <Canvas> viewport wired into the app shell with an EMPTY scene (background colour only) — nodes/arcs/glyphs land in M3, and the data layer that feeds them lands M1-T3..M2. Deliberate scope per the PRD §5 architectural rule: the render layer is a thin consumer of a pure, unit-tested data layer, so this task lands the shell half (canvas + camera + boot callback) and nothing ahead of its dependency. App shell is now header (title + thesis) over a full-height <main> viewport. Viewport exposes data-testid=viewport / viewport-canvas and flips a 'viewport ready' chip on onCreated so the boot path is distinguishable from a blank canvas headlessly; jsdom has no WebGL, so App.test.tsx mocks @react-three/fiber's Canvas (same pattern as torchship M1-T1). No three.js import existed in the init commit by design — this is where the R3F viewport actually lands. NEXT: M1-T2 (lint/format/typecheck/vitest/build gate + dev scripts)."
+    }
+  }
 }
