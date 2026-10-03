@@ -13,8 +13,9 @@ forces you to reconstruct by eye.
 
 Early build. Scaffold + PRD + build plan landed 2026-10-01; one task/day proceeds from
 `BUILD_PLAN.md`. The R3F viewport (M1-T1) is landed — an empty scene wired into the app
-shell, waiting on the trace data layer to give it something to draw. Next: **M1-T2 —
-add the lint/format/typecheck/vitest/build gate and dev scripts**.
+shell, waiting on the trace data layer to give it something to draw. The five-part build
+gate is wired (M1-T2): `npm run verify` runs lint → format → typecheck → test → build.
+Next: **M1-T3 — define the typed trace contract (Run, Agent, Message, ToolCall, Event)**.
 
 ## Stack
 
@@ -41,8 +42,27 @@ by an automated loop.
 ```bash
 npm ci
 npm run dev      # dev server
-npm run verify   # lint + typecheck + test + build
+npm run verify   # the full gate: lint + format + typecheck + test + build
 ```
 
 > Install with `npm ci`, not `npm install` — these repos ship a pinned sibling
 > lockfile; plain `npm install` hits a known npm arborist failure on this dep set.
+
+## Scripts
+
+| Script | What it does |
+|--------|--------------|
+| `npm run dev` | Vite dev server (interactive only — never run in the automated loop) |
+| `npm run build` | `tsc -b` then a production Vite build |
+| `npm run lint` | oxlint, warnings promoted to errors (`--deny-warnings`) |
+| `npm run format` | prettier `--write` over the repo |
+| `npm run format:check` | prettier check (no writes) — CI-safe |
+| `npm run typecheck` | `tsc -b --noEmit` across all project references |
+| `npm run test` | vitest, single run |
+| `npm run test:watch` | vitest, watch mode |
+| `npm run preview` | serve the last production build |
+| `npm run verify` | **the gate** — lint → format:check → typecheck → test → build |
+
+The gate's wiring is itself tested (`src/gate.test.ts`): dropping a step, flipping `test`
+to watch mode, or letting lint stop failing on warnings trips that test rather than
+silently weakening `verify`.
