@@ -17,6 +17,21 @@
       ],
       "verification": "lint 0w/0e (8 files); typecheck clean; test 4/4 passed (2 files, +3 new); build green (337ms); prettier clean on touched files",
       "notes": "R3F <Canvas> viewport wired into the app shell with an EMPTY scene (background colour only) — nodes/arcs/glyphs land in M3, and the data layer that feeds them lands M1-T3..M2. Deliberate scope per the PRD §5 architectural rule: the render layer is a thin consumer of a pure, unit-tested data layer, so this task lands the shell half (canvas + camera + boot callback) and nothing ahead of its dependency. App shell is now header (title + thesis) over a full-height <main> viewport. Viewport exposes data-testid=viewport / viewport-canvas and flips a 'viewport ready' chip on onCreated so the boot path is distinguishable from a blank canvas headlessly; jsdom has no WebGL, so App.test.tsx mocks @react-three/fiber's Canvas (same pattern as torchship M1-T1). No three.js import existed in the init commit by design — this is where the R3F viewport actually lands. NEXT: M1-T2 (lint/format/typecheck/vitest/build gate + dev scripts)."
+    },
+    "M1-T2": {
+      "status": "complete",
+      "date": "2026-10-03",
+      "title": "Add lint/format/typecheck/vitest/build gate and local dev scripts",
+      "files_modified": [
+        "package.json",
+        "src/gate.test.ts",
+        "README.md"
+      ],
+      "tests_added": [
+        "src/gate.test.ts — 6 tests guarding the gate's own wiring: every gate step has its own script; `verify` chains all five; `verify` runs them in lint→format→typecheck→test→build order; `test` is vitest run (not watch) and watch is separate; lint passes --deny-warnings; a Node engine floor is pinned"
+      ],
+      "verification": "npm run verify green end-to-end — lint 0w/0e (9 files, --deny-warnings); format:check clean; typecheck clean; test 10/10 passed (3 files, +6 new); build green (338ms)",
+      "notes": "The scaffold init commit (2026-10-01) already shipped the config FILES (oxlint/prettier/vitest/tsconfig/package scripts), so the delta for M1-T2 was making the gate COMPLETE and self-verifying rather than creating it from scratch. Three gaps closed: (1) `verify` omitted the format check despite the gate's name — now runs lint → format:check → typecheck → test → build; (2) lint did not fail on warnings, so a clean gate could hide warnings — now `oxlint --deny-warnings`; (3) nothing guarded the gate itself, so a dropped step would silently weaken every future task — src/gate.test.ts now reads package.json and asserts the wiring. Added an `engines.node: >=20` floor (box runs Node 22.23.1). README gained a Scripts table and status moved to M1-T3. Deliberately did NOT add a CI workflow (task scope is local dev scripts) or new deps. NEXT: M1-T3 (typed trace contract: Run, Agent, Message, ToolCall, Event)."
     }
   }
 }
