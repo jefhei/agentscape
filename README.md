@@ -15,7 +15,9 @@ Early build. Scaffold + PRD + build plan landed 2026-10-01; one task/day proceed
 `BUILD_PLAN.md`. The R3F viewport (M1-T1) is landed — an empty scene wired into the app
 shell, waiting on the trace data layer to give it something to draw. The five-part build
 gate is wired (M1-T2): `npm run verify` runs lint → format → typecheck → test → build.
-Next: **M1-T3 — define the typed trace contract (Run, Agent, Message, ToolCall, Event)**.
+The typed trace contract (M1-T3) is landed in [`src/types/`](src/types/trace.ts) —
+`Run`, `Agent`, `Message`, `ToolCall` and the `Event` union every other module speaks.
+Next: **M1-T4 — `agent_messages` export adapter (Supabase rows → trace contract)**.
 
 ## Stack
 
