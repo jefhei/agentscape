@@ -32,6 +32,22 @@
       ],
       "verification": "npm run verify green end-to-end — lint 0w/0e (9 files, --deny-warnings); format:check clean; typecheck clean; test 10/10 passed (3 files, +6 new); build green (338ms)",
       "notes": "The scaffold init commit (2026-10-01) already shipped the config FILES (oxlint/prettier/vitest/tsconfig/package scripts), so the delta for M1-T2 was making the gate COMPLETE and self-verifying rather than creating it from scratch. Three gaps closed: (1) `verify` omitted the format check despite the gate's name — now runs lint → format:check → typecheck → test → build; (2) lint did not fail on warnings, so a clean gate could hide warnings — now `oxlint --deny-warnings`; (3) nothing guarded the gate itself, so a dropped step would silently weaken every future task — src/gate.test.ts now reads package.json and asserts the wiring. Added an `engines.node: >=20` floor (box runs Node 22.23.1). README gained a Scripts table and status moved to M1-T3. Deliberately did NOT add a CI workflow (task scope is local dev scripts) or new deps. NEXT: M1-T3 (typed trace contract: Run, Agent, Message, ToolCall, Event)."
+    },
+    "M1-T3": {
+      "status": "complete",
+      "date": "2026-10-04",
+      "title": "Define the typed trace contract: Run, Agent, Message, ToolCall, Event",
+      "files_modified": [
+        "src/types/trace.ts",
+        "src/types/index.ts",
+        "src/types/trace.test.ts",
+        "README.md"
+      ],
+      "tests_added": [
+        "src/types/trace.test.ts — 8 tests: the ingest constant is pinned to exactly 'agent_messages' and EVENT_KINDS is exactly ['run_start','run_end','message','tool_call']; a full Run + Agent/Message/ToolCall/Event fixture is attached with `satisfies` so any renamed/dropped required field breaks compilation; broadcast is modelled as to===null; a tool call may stand alone (messageId===null); the isMessageEvent/isToolCallEvent/isLifecycleEvent guards narrow correctly and only for their own kind; each narrowed arm carries its precise member shape (expectTypeOf); the union is exhaustively switchable on `kind` with no default arm; ordering fields (at/sequence/seed) are integers so the timeline is a total order"
+      ],
+      "verification": "npm run verify green end-to-end — lint 0w/0e (--deny-warnings); format:check clean; typecheck clean; test 18/18 passed (4 files, +8 new); build green (366ms)",
+      "notes": "The trace contract every other module speaks is now typed in src/types/ (pure data, zero deps — no three.js, no DOM, no clock, so it is jsdom-safe and importable everywhere). Declared the five PRD-mandated entities: Agent (with a derived parentId fan-out link, precomputed send/receive counts, per-agent token/cost attribution), Message (from/to with to===null as broadcast, raw body kept alongside a decoded MessagePayload + mirrored action, status, epoch-ms `at`), ToolCall (agent-attributed, messageId nullable, args/duration/cost), and Event as a discriminated union on `kind` over run_start | run_end | message | tool_call, each arm carrying a precise payload plus the shared deterministic ordering pair (`at` epoch-ms + `sequence`). Run ties them together with a required `seed` (determinism is a product requirement per PRD §5, so the layout seed is part of the contract) and a precomputed RunMeta for the HUD. Design choices that matter downstream: (1) ids and `sequence` are DERIVED from the trace, never random — that is what lets M1-T5 pin byte-identical output and M2 render a stable shape; (2) all timestamps are numbers (epoch ms), never strings/Dates, so ordering is total and timezone-free; (3) NO layout coordinates live here — the contract carries facts only, layout is M2's derived output; (4) TraceSource is a one-member union pinned to 'agent_messages' with a note not to widen it before M6-T5 (single-format ingest rule). Deliberately did NOT build the parser (M1-T4) or the normalization/counting pass (M1-T5) — this task defines shapes only; the Agent/Run counts in the contract are fields the later passes will populate. Chose const-unions over TS enums because tsconfig sets erasableSyntaxOnly. NEXT: M1-T4 (agent_messages export adapter: Supabase rows -> trace contract)."
     }
   }
 }
