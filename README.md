@@ -17,7 +17,11 @@ shell, waiting on the trace data layer to give it something to draw. The five-pa
 gate is wired (M1-T2): `npm run verify` runs lint → format → typecheck → test → build.
 The typed trace contract (M1-T3) is landed in [`src/types/`](src/types/trace.ts) —
 `Run`, `Agent`, `Message`, `ToolCall` and the `Event` union every other module speaks.
-Next: **M1-T4 — `agent_messages` export adapter (Supabase rows → trace contract)**.
+The `agent_messages` adapter (M1-T4) is landed in
+[`src/adapter/`](src/adapter/agentMessages.ts) — `parseAgentMessagesExport` turns a
+recorded Supabase export into a normalized `Run`, deterministically and independent of
+row order. Next: **M1-T5 — TraceModel normalization pass with deterministic output +
+tests**.
 
 ## Stack
 
