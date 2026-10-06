@@ -2,12 +2,13 @@
   "version": 1,
   "project": "agentscape",
   "current_milestone": "M1 \u2014 Foundation, Trace Contract & Data Layer",
-  "current_task": "M1-T5",
+  "current_task": "M1-T6",
   "completed_tasks": [
     "M1-T1",
     "M1-T2",
     "M1-T3",
-    "M1-T4"
+    "M1-T4",
+    "M1-T5"
   ],
   "milestones": [
     {
