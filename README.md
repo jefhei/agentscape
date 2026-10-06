@@ -20,8 +20,11 @@ The typed trace contract (M1-T3) is landed in [`src/types/`](src/types/trace.ts)
 The `agent_messages` adapter (M1-T4) is landed in
 [`src/adapter/`](src/adapter/agentMessages.ts) — `parseAgentMessagesExport` turns a
 recorded Supabase export into a normalized `Run`, deterministically and independent of
-row order. Next: **M1-T5 — TraceModel normalization pass with deterministic output +
-tests**.
+row order. The TraceModel normalization pass (M1-T5) is landed in
+[`src/model/`](src/model/traceModel.ts) — `normalizeTrace` canonicalizes order, assigns
+`Event.sequence`, recomputes every derived field from the facts and verifies referential
+integrity, so the same facts always yield a byte-identical model. Next: **M1-T6 —
+deterministic trace fixtures (fan-out, loop, dead branch, handoff chain)**.
 
 ## Stack
 
