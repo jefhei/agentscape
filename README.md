@@ -23,8 +23,12 @@ recorded Supabase export into a normalized `Run`, deterministically and independ
 row order. The TraceModel normalization pass (M1-T5) is landed in
 [`src/model/`](src/model/traceModel.ts) — `normalizeTrace` canonicalizes order, assigns
 `Event.sequence`, recomputes every derived field from the facts and verifies referential
-integrity, so the same facts always yield a byte-identical model. Next: **M1-T6 —
-deterministic trace fixtures (fan-out, loop, dead branch, handoff chain)**.
+integrity, so the same facts always yield a byte-identical model. The deterministic trace
+fixtures (M1-T6) are landed in [`src/fixtures/`](src/fixtures/traceFixtures.ts) — four
+synthetic `agent_messages` exports, one per structural shape (fan-out, loop, dead branch,
+handoff chain), each pushed through the real adapter + normalizer from a single fixed
+epoch, so a fixture is byte-stable and exhibits exactly the shape it is named for. Next:
+**M1-T7 — timeline/playhead model over the event stream**.
 
 ## Stack
 
