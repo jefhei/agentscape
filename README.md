@@ -27,8 +27,12 @@ integrity, so the same facts always yield a byte-identical model. The determinis
 fixtures (M1-T6) are landed in [`src/fixtures/`](src/fixtures/traceFixtures.ts) — four
 synthetic `agent_messages` exports, one per structural shape (fan-out, loop, dead branch,
 handoff chain), each pushed through the real adapter + normalizer from a single fixed
-epoch, so a fixture is byte-stable and exhibits exactly the shape it is named for. Next:
-**M1-T7 — timeline/playhead model over the event stream**.
+epoch, so a fixture is byte-stable and exhibits exactly the shape it is named for. The
+timeline/playhead model (M1-T7) is landed in
+[`src/timeline/`](src/timeline/timeline.ts) — `buildTimeline` flattens a normalized run
+into scrub-able stops, `frameAt` reports what has fired and which agents are live at any
+position, and play/pause/speed/seek/step/advance are pure transitions over the `Playhead`
+value (no clock). Next: **M2-T1 — force-directed 3D layout over the agent graph**.
 
 ## Stack
 
