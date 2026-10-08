@@ -1,27 +1,28 @@
 {
   "version": 1,
   "project": "agentscape",
-  "current_milestone": "M1 \u2014 Foundation, Trace Contract & Data Layer",
-  "current_task": "M1-T7",
+  "current_milestone": "M2 \u2014 Spatial Layout Engine (pure)",
+  "current_task": "M2-T1",
   "completed_tasks": [
     "M1-T1",
     "M1-T2",
     "M1-T3",
     "M1-T4",
     "M1-T5",
-    "M1-T6"
+    "M1-T6",
+    "M1-T7"
   ],
   "milestones": [
     {
       "id": "M1",
       "name": "Foundation, Trace Contract & Data Layer",
-      "status": "in_progress",
+      "status": "complete",
       "days": "1-2"
     },
     {
       "id": "M2",
       "name": "Spatial Layout Engine (pure)",
-      "status": "pending",
+      "status": "in_progress",
       "days": "2-4"
     },
     {
