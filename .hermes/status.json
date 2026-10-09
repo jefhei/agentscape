@@ -2,7 +2,7 @@
   "version": 1,
   "project": "agentscape",
   "current_milestone": "M2 \u2014 Spatial Layout Engine (pure)",
-  "current_task": "M2-T1",
+  "current_task": "M2-T2",
   "completed_tasks": [
     "M1-T1",
     "M1-T2",
@@ -10,7 +10,8 @@
     "M1-T4",
     "M1-T5",
     "M1-T6",
-    "M1-T7"
+    "M1-T7",
+    "M2-T1"
   ],
   "milestones": [
     {
