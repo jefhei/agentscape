@@ -32,7 +32,11 @@ timeline/playhead model (M1-T7) is landed in
 [`src/timeline/`](src/timeline/timeline.ts) — `buildTimeline` flattens a normalized run
 into scrub-able stops, `frameAt` reports what has fired and which agents are live at any
 position, and play/pause/speed/seek/step/advance are pure transitions over the `Playhead`
-value (no clock). Next: **M2-T1 — force-directed 3D layout over the agent graph**.
+value (no clock). The force-directed 3D layout (M2-T1) is landed in
+[`src/layout/`](src/layout/forceLayout.ts) — `layoutTrace` relaxes the agent
+communication graph (derived from the messages) into deterministic 3D positions,
+seeded from the run's own `seed`, so the same trace always renders the same shape.
+Next: **M2-T2 — layout settlement rules (stable convergence, no jitter)**.
 
 ## Stack
 
