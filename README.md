@@ -36,7 +36,13 @@ value (no clock). The force-directed 3D layout (M2-T1) is landed in
 [`src/layout/`](src/layout/forceLayout.ts) — `layoutTrace` relaxes the agent
 communication graph (derived from the messages) into deterministic 3D positions,
 seeded from the run's own `seed`, so the same trace always renders the same shape.
-Next: **M2-T2 — layout settlement rules (stable convergence, no jitter)**.
+The layout settlement rules (M2-T2) are landed in
+[`src/layout/`](src/layout/settlement.ts) — `settleLayout` relaxes until the forces
+balance, cooling **exponentially and independently of the iteration budget**, so the
+settled shape is reproducible re-layout to re-layout, and reports `converged` plus the
+energy and per-step movement traces; `isSettled` reads a layout's residual force.
+Next: **M2-T3 — visual-attribute mapping (node size/emissive from activity, arc width
+from message volume)**.
 
 ## Stack
 

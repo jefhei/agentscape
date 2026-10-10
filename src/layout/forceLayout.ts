@@ -40,6 +40,18 @@
  *   so late iterations only nudge and the layout settles rather than jitters
  *   (M2-T2 formalizes the settlement rule on top of this).
  *
+ * ## Shared simulation core (M2-T2)
+ *
+ * The per-iteration physics — {@link prepareSimulation} (build the seeded
+ * state), {@link relaxIteration} (one relaxation step, reporting residual
+ * energy and node movement) and {@link buildLayout} (freeze the state into a
+ * {@link ForceLayout}) — is exported so the **settlement pass** (M2-T2,
+ * `./settlement.ts`) can drive the SAME force law with a convergence-driven
+ * cooling schedule instead of a fixed iteration budget. `layoutTrace` below is
+ * the fixed-budget primitive; it and the settlement pass share one physics, so
+ * the two can never drift apart. These three are internal seams, not a public
+ * API: import {@link layoutTrace} for a positioned layout.
+ *
  * ## Scope
  *
  * The adjacency it lays out is the raw *communication graph* derived from the
@@ -267,55 +279,57 @@ function initialHalfExtent(count: number): number {
   return Math.max(1, Math.cbrt(count))
 }
 
-// ── The layout ──────────────────────────────────────────────────────────────
+// ── Simulation core (shared by layoutTrace and the M2-T2 settlement pass) ─────
 
 /**
- * Lay a normalized {@link TraceModel} out in 3D. Pure and deterministic: the
- * same model (same facts, same `seed`) always yields a byte-identical layout,
- * independent of the order the model's arrays arrive in, and the model is
- * neither read from nor written to beyond its facts.
- *
- * @param model a normalized trace (M1-T5). Agents are laid out by id; messages
- *        define the communication graph via {@link deriveLayoutLinks}.
- * @param options iteration count, ideal edge length and seed overrides.
+ * A prepared relaxation: the canonical agent ids, the communication graph as
+ * index-based edges, and the seeded initial point cloud. Mutable `points` is
+ * the simulation's working state — {@link layoutTrace} and the settlement pass
+ * thread it through {@link relaxIteration}, then freeze it with
+ * {@link buildLayout}. Internal seam (M2-T2); not part of the public API.
  */
-export function layoutTrace(
+export interface SimulationState {
+  /** Agent ids in canonical (id-sorted) order — `points[i]` belongs to `ids[i]`. */
+  ids: AgentId[]
+  /** Number of agents (`ids.length`); `0` or `1` are degenerate, nothing relaxes. */
+  count: number
+  /** The seed the initial placement was drawn from. */
+  seed: number
+  /** Ideal edge length used by the force law. */
+  idealDistance: number
+  /** Half-extent of the seeded initial cube (the initial cooling temperature). */
+  half: number
+  /** The undirected communication graph, sorted — carried through to the result. */
+  links: LayoutLink[]
+  /** Links as index pairs onto `points`, collapsed and weight-tagged. */
+  edges: ReadonlyArray<{ a: number; b: number; weight: number }>
+  /** Working point cloud; mutated in place by {@link relaxIteration}. */
+  points: Vec3[]
+  /** `agentId → index into points` (so the result keeps only real links). */
+  indexOf: Map<AgentId, number>
+}
+
+/**
+ * Build the seeded starting state for a relaxation. Deterministic: the initial
+ * point cloud comes from {@link mulberry32} keyed by the run's `seed`, so the
+ * same model always starts from the same configuration. A lone agent is placed
+ * at the origin (no relaxation happens); an empty run yields an empty cloud.
+ *
+ * Order-independent: `ids` is id-sorted and `edges` derives from the sorted
+ * {@link deriveLayoutLinks}, so scrambling the model's arrays changes nothing.
+ */
+export function prepareSimulation(
   model: TraceModel,
-  options: LayoutOptions = {},
-): ForceLayout {
+  options: Pick<LayoutOptions, 'seed' | 'idealDistance'> = {},
+): SimulationState {
   const ids = model.agents.map((agent) => agent.id).sort(compareModelIds)
   const count = ids.length
   const seed = options.seed ?? model.seed
-  const iterations = Math.max(0, Math.floor(options.iterations ?? DEFAULT_ITERATIONS))
   const idealDistance = Math.max(
     MIN_DISTANCE,
     options.idealDistance ?? DEFAULT_IDEAL_DISTANCE,
   )
-
   const allLinks = deriveLayoutLinks(model)
-
-  // Degenerate runs: nothing to relax. A single agent sits at the origin.
-  if (count === 0) {
-    return {
-      nodes: [],
-      links: [],
-      seed,
-      iterations: 0,
-      energy: 0,
-      bounds: boundsOf([]),
-    }
-  }
-  if (count === 1) {
-    const origin: Vec3 = { x: 0, y: 0, z: 0 }
-    return {
-      nodes: [{ agentId: ids[0], position: origin }],
-      links: [],
-      seed,
-      iterations: 0,
-      energy: 0,
-      bounds: boundsOf([origin]),
-    }
-  }
 
   const indexOf = new Map<AgentId, number>()
   ids.forEach((id, index) => indexOf.set(id, index))
@@ -329,61 +343,134 @@ export function layoutTrace(
     edges.push({ a, b, weight: link.weight })
   }
 
+  const half = initialHalfExtent(count)
+
+  // Degenerate runs never relax; a single agent is fixed at the origin.
+  if (count <= 1) {
+    return {
+      ids,
+      count,
+      seed,
+      idealDistance,
+      half,
+      links: allLinks,
+      edges,
+      points: count === 1 ? [{ x: 0, y: 0, z: 0 }] : [],
+      indexOf,
+    }
+  }
+
   // Seeded initial placement inside a cube around the origin. Same seed ⇒ same
   // start ⇒ same settled layout.
   const random = mulberry32(seed)
-  const half = initialHalfExtent(count)
   const points: Vec3[] = ids.map(() => ({
     x: (random() * 2 - 1) * half,
     y: (random() * 2 - 1) * half,
     z: (random() * 2 - 1) * half,
   }))
 
-  let energy = 0
+  return {
+    ids,
+    count,
+    seed,
+    idealDistance,
+    half,
+    links: allLinks,
+    edges,
+    points,
+    indexOf,
+  }
+}
 
-  for (let iter = 0; iter < iterations; iter += 1) {
-    const displacement: Vec3[] = points.map(() => ({ x: 0, y: 0, z: 0 }))
+/** Result of a single relaxation step. */
+export interface RelaxStep {
+  /**
+   * Residual force magnitude *at the configuration the step started from*
+   * (`Σ ‖Fᵢ‖`), measured before the capped displacement is applied — the
+   * convergence signal.
+   */
+  energy: number
+  /**
+   * Greatest distance any single node actually moved this step (the applied,
+   * temperature-capped displacement). It upper-bounds the whole step's effect
+   * and is what a settlement pass watches to detect that the shape has stopped
+   * changing.
+   */
+  movement: number
+}
 
-    // Repulsion: every pair pushes apart (F = k² / d).
-    for (let i = 0; i < count; i += 1) {
-      for (let j = i + 1; j < count; j += 1) {
-        const delta = sub(points[i], points[j])
-        const d = Math.max(length(delta), MIN_DISTANCE)
-        const force = (idealDistance * idealDistance) / d
-        const unit: Vec3 = { x: delta.x / d, y: delta.y / d, z: delta.z / d }
-        addScaled(displacement[i], unit, force)
-        addScaled(displacement[j], unit, -force)
-      }
-    }
+/**
+ * Advance the relaxation one step: accumulate repulsion (every pair,
+ * `F = k²/d`) and attraction (per link, `F = d²/k · weight`), report the
+ * residual energy, then apply each node's displacement capped at `temperature`
+ * (so no node moves further than the current temperature). Mutates `state`.
+ *
+ * The arithmetic is identical to the fixed-budget loop baked into
+ * {@link layoutTrace}; extraction into a named step is M2-T2's, so the
+ * settlement pass drives exactly the same physics.
+ */
+export function relaxIteration(state: SimulationState, temperature: number): RelaxStep {
+  const { count, points, edges, idealDistance } = state
+  const displacement: Vec3[] = points.map(() => ({ x: 0, y: 0, z: 0 }))
 
-    // Attraction: linked pairs pull together (F = d² / k · weight).
-    for (const edge of edges) {
-      const delta = sub(points[edge.a], points[edge.b])
+  // Repulsion: every pair pushes apart (F = k² / d).
+  for (let i = 0; i < count; i += 1) {
+    for (let j = i + 1; j < count; j += 1) {
+      const delta = sub(points[i], points[j])
       const d = Math.max(length(delta), MIN_DISTANCE)
-      const force = ((d * d) / idealDistance) * edge.weight
+      const force = (idealDistance * idealDistance) / d
       const unit: Vec3 = { x: delta.x / d, y: delta.y / d, z: delta.z / d }
-      addScaled(displacement[edge.a], unit, -force)
-      addScaled(displacement[edge.b], unit, force)
-    }
-
-    // Residual force magnitude at this configuration — the convergence signal.
-    energy = 0
-    for (let i = 0; i < count; i += 1) energy += length(displacement[i])
-
-    // Apply, capped by the cooling temperature (max step per iteration).
-    // Decaying linearly to zero, so late iterations only nudge: the layout
-    // settles rather than jitters (M2-T2 builds the settlement rule on this).
-    const temperature = half * (1 - iter / iterations)
-    for (let i = 0; i < count; i += 1) {
-      const d = length(displacement[i])
-      if (d <= 0) continue
-      const step = Math.min(d, temperature) / d
-      points[i].x += displacement[i].x * step
-      points[i].y += displacement[i].y * step
-      points[i].z += displacement[i].z * step
+      addScaled(displacement[i], unit, force)
+      addScaled(displacement[j], unit, -force)
     }
   }
 
+  // Attraction: linked pairs pull together (F = d² / k · weight).
+  for (const edge of edges) {
+    const delta = sub(points[edge.a], points[edge.b])
+    const d = Math.max(length(delta), MIN_DISTANCE)
+    const force = ((d * d) / idealDistance) * edge.weight
+    const unit: Vec3 = { x: delta.x / d, y: delta.y / d, z: delta.z / d }
+    addScaled(displacement[edge.a], unit, -force)
+    addScaled(displacement[edge.b], unit, force)
+  }
+
+  // Residual force magnitude at this configuration — the convergence signal.
+  let energy = 0
+  for (let i = 0; i < count; i += 1) energy += length(displacement[i])
+
+  // Apply, capped by the current temperature (max step). Below the cap a node
+  // moves by its full displacement; above it, only `temperature` far.
+  let movement = 0
+  for (let i = 0; i < count; i += 1) {
+    const d = length(displacement[i])
+    if (d <= 0) continue
+    const step = Math.min(d, temperature) / d
+    const dx = displacement[i].x * step
+    const dy = displacement[i].y * step
+    const dz = displacement[i].z * step
+    points[i].x += dx
+    points[i].y += dy
+    points[i].z += dz
+    movement = Math.max(movement, Math.sqrt(dx * dx + dy * dy + dz * dz))
+  }
+
+  return { energy, movement }
+}
+
+/**
+ * Freeze a relaxed simulation state into a {@link ForceLayout}. `iterations`
+ * and `energy` are the diagnostics the caller measured; the point cloud is
+ * copied into nodes in canonical id order, the link list keeps only links
+ * between real agents, and bounds are measured over the cloud. No model is
+ * touched — the returned positions live only on the layout.
+ */
+export function buildLayout(
+  state: SimulationState,
+  iterations: number,
+  energy: number,
+): ForceLayout {
+  const { ids, points, links, indexOf } = state
   const nodes: LayoutNode[] = ids.map((id, index) => ({
     agentId: id,
     position: points[index],
@@ -391,17 +478,55 @@ export function layoutTrace(
 
   return {
     nodes,
-    links: allLinks.filter(
+    links: links.filter(
       (link) =>
         link.source !== link.target &&
         indexOf.has(link.source) &&
         indexOf.has(link.target),
     ),
-    seed,
+    seed: state.seed,
     iterations,
     energy,
     bounds: boundsOf(points),
   }
+}
+
+// ── The layout ──────────────────────────────────────────────────────────────
+
+/**
+ * Lay a normalized {@link TraceModel} out in 3D. Pure and deterministic: the
+ * same model (same facts, same `seed`) always yields a byte-identical layout,
+ * independent of the order the model's arrays arrive in, and the model is
+ * neither read from nor written to beyond its facts.
+ *
+ * Runs a fixed number of iterations with a **linearly-decaying** displacement
+ * cap (`temperature = half · (1 − iter/iterations)`), so the result is a pure
+ * function of the input. For a convergence-driven alternative that stops when
+ * the forces balance — and whose result does not depend on the iteration
+ * budget — see `settleLayout` (M2-T2), which shares this module's physics.
+ *
+ * @param model a normalized trace (M1-T5). Agents are laid out by id; messages
+ *        define the communication graph via {@link deriveLayoutLinks}.
+ * @param options iteration count, ideal edge length and seed overrides.
+ */
+export function layoutTrace(
+  model: TraceModel,
+  options: LayoutOptions = {},
+): ForceLayout {
+  const state = prepareSimulation(model, options)
+  // Degenerate runs (0 or 1 agent) never relax: 0 iterations, zero energy.
+  const iterations =
+    state.count < 2
+      ? 0
+      : Math.max(0, Math.floor(options.iterations ?? DEFAULT_ITERATIONS))
+
+  let energy = 0
+  for (let iter = 0; iter < iterations; iter += 1) {
+    const temperature = state.half * (1 - iter / iterations)
+    energy = relaxIteration(state, temperature).energy
+  }
+
+  return buildLayout(state, iterations, energy)
 }
 
 /** The position of `agentId` in a layout, or `null` when the agent is absent. */
