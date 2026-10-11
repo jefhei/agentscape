@@ -8,6 +8,8 @@
  * Two placement primitives live behind it, sharing one force law:
  * {@link layoutTrace} (M2-T1) runs a fixed iteration budget; {@link settleLayout}
  * (M2-T2) relaxes until the shape settles and reports how it converged.
+ * {@link mapTraceAttributes} (M2-T3) then maps the trace's facts to the visual
+ * magnitudes (node size/emissive, arc width) the render layer draws with.
  */
 export {
   DEFAULT_IDEAL_DISTANCE,
@@ -36,3 +38,25 @@ export {
 } from './settlement.ts'
 
 export type { Settlement, SettlementOptions } from './settlement.ts'
+
+export {
+  DEFAULT_MAX_ARC_WIDTH,
+  DEFAULT_MAX_EMISSIVE,
+  DEFAULT_MAX_NODE_SIZE,
+  DEFAULT_MIN_ARC_WIDTH,
+  DEFAULT_MIN_EMISSIVE,
+  DEFAULT_MIN_NODE_SIZE,
+  NEUTRAL_INTENSITY,
+  linkAttribute,
+  mapTraceAttributes,
+  nodeAttribute,
+} from './attributes.ts'
+
+export type {
+  AttributeOptions,
+  AttributeRange,
+  LinkAttribute,
+  NodeActivity,
+  NodeAttribute,
+  TraceAttributes,
+} from './attributes.ts'

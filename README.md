@@ -41,8 +41,14 @@ The layout settlement rules (M2-T2) are landed in
 balance, cooling **exponentially and independently of the iteration budget**, so the
 settled shape is reproducible re-layout to re-layout, and reports `converged` plus the
 energy and per-step movement traces; `isSettled` reads a layout's residual force.
-Next: **M2-T3 — visual-attribute mapping (node size/emissive from activity, arc width
-from message volume)**.
+The visual-attribute mapping (M2-T3) is landed in
+[`src/layout/`](src/layout/attributes.ts) — `mapTraceAttributes` turns the trace's facts
+into the numbers the render layer draws with: node size and emissive driven by an agent's
+activity (`messagesSent + messagesReceived + toolCalls`), arc width driven by the message
+volume on each communication link. Both channels are normalized within the run, fall back
+to a neutral midpoint when a channel has no spread, and are pure and reproducible.
+Next: **M2-T4 — derived edge model (spawn/handoff/message edges from the trace, never
+hand-placed)**.
 
 ## Stack
 
