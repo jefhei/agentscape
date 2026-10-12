@@ -9,7 +9,9 @@
  * {@link layoutTrace} (M2-T1) runs a fixed iteration budget; {@link settleLayout}
  * (M2-T2) relaxes until the shape settles and reports how it converged.
  * {@link mapTraceAttributes} (M2-T3) then maps the trace's facts to the visual
- * magnitudes (node size/emissive, arc width) the render layer draws with.
+ * magnitudes (node size/emissive, arc width) the render layer draws with, and
+ * {@link deriveEdgeModel} (M2-T4) derives the typed spawn/handoff/message edges
+ * — and each agent's role and parent — from the trace.
  */
 export {
   DEFAULT_IDEAL_DISTANCE,
@@ -60,3 +62,17 @@ export type {
   NodeAttribute,
   TraceAttributes,
 } from './attributes.ts'
+
+export {
+  DerivedEdgeError,
+  EDGE_KINDS,
+  HANDOFF_VERBS,
+  SPAWN_VERBS,
+  classifyAction,
+  deriveEdgeModel,
+  edgeBetween,
+  lineageOf,
+  withDerivedLineage,
+} from './edges.ts'
+
+export type { DerivedEdge, DerivedLineage, EdgeKind, EdgeModel } from './edges.ts'

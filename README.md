@@ -47,8 +47,13 @@ into the numbers the render layer draws with: node size and emissive driven by a
 activity (`messagesSent + messagesReceived + toolCalls`), arc width driven by the message
 volume on each communication link. Both channels are normalized within the run, fall back
 to a neutral midpoint when a channel has no spread, and are pure and reproducible.
-Next: **M2-T4 — derived edge model (spawn/handoff/message edges from the trace, never
-hand-placed)**.
+The derived edge model (M2-T4) is landed in
+[`src/layout/`](src/layout/edges.ts) — `deriveEdgeModel` turns the trace's messages
+into typed **spawn / handoff / message** edges (classified from each message's declared
+action, direction preserved, never hand-placed) and derives every agent's `role` and
+`parentId` from the spawn edges, so the fan-out hierarchy has one owner;
+`withDerivedLineage` writes those roles/parents back onto the model.
+Next: **M2-T5 — layout + attribute invariant tests across all fixtures**.
 
 ## Stack
 
