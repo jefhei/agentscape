@@ -76,3 +76,19 @@ export {
 } from './edges.ts'
 
 export type { DerivedEdge, DerivedLineage, EdgeKind, EdgeModel } from './edges.ts'
+
+export {
+  InvariantError,
+  assertInvariants,
+  checkAttributeInvariants,
+  checkEdgeInvariants,
+  checkLayoutInvariants,
+  checkSceneInvariants,
+  findHandAuthoredCoordinates,
+} from './invariants.ts'
+
+export type {
+  AttributeInvariantOptions,
+  InvariantViolation,
+  LayoutInvariantOptions,
+} from './invariants.ts'

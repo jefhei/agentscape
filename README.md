@@ -53,7 +53,17 @@ into typed **spawn / handoff / message** edges (classified from each message's d
 action, direction preserved, never hand-placed) and derives every agent's `role` and
 `parentId` from the spawn edges, so the fan-out hierarchy has one owner;
 `withDerivedLineage` writes those roles/parents back onto the model.
-Next: **M2-T5 — layout + attribute invariant tests across all fixtures**.
+The cross-fixture invariant harness (M2-T5) is landed in
+[`src/layout/`](src/layout/invariants.ts) — `checkLayoutInvariants` /
+`checkAttributeInvariants` / `checkEdgeInvariants` (and the end-to-end
+`checkSceneInvariants`) assert the M2 exit criteria as data over every fixture:
+one node per agent in canonical order, finite distinct positions, bounds that
+enclose the cloud, a seeded layout whose link topology *is* the trace's graph,
+activity/intensity that re-derives from the model and maps monotonically into
+range, and an acyclic spawn lineage with consistent roles. The
+`findHandAuthoredCoordinates` scanner is the machine gate — a test uses it to
+prove the pure half of `src/` carries no hand-placed coordinate.
+Next: **M3-T1 — agent nodes as instanced glowing meshes**.
 
 ## Stack
 
