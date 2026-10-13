@@ -1,8 +1,8 @@
 {
   "version": 1,
   "project": "agentscape",
-  "current_milestone": "M2 — Spatial Layout Engine (pure)",
-  "current_task": "M2-T5",
+  "current_milestone": "M3 — Scene Construction & Rendering",
+  "current_task": "M3-T1",
   "completed_tasks": [
     "M1-T1",
     "M1-T2",
@@ -14,7 +14,8 @@
     "M2-T1",
     "M2-T2",
     "M2-T3",
-    "M2-T4"
+    "M2-T4",
+    "M2-T5"
   ],
   "milestones": [
     {
@@ -26,13 +27,13 @@
     {
       "id": "M2",
       "name": "Spatial Layout Engine (pure)",
-      "status": "in_progress",
+      "status": "complete",
       "days": "2-4"
     },
     {
       "id": "M3",
       "name": "Scene Construction & Rendering",
-      "status": "pending",
+      "status": "in_progress",
       "days": "4-7"
     },
     {
