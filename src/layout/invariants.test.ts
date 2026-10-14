@@ -456,6 +456,9 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       'src/layout/attributes.ts',
       'src/layout/edges.ts',
       'src/layout/invariants.ts',
+      // The scene layer's pure half (M3-T1): the node plan composes positions
+      // from the layout and must author none of its own either.
+      'src/scene/nodes.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')

@@ -1,29 +1,30 @@
 import { useState } from 'react'
 import { Canvas } from '@react-three/fiber'
+import type { TraceModel } from './model/index.ts'
+import AgentNodeLayer from './scene/AgentNodeLayer.tsx'
 
 /**
- * The AgentScape viewport (M1-T1).
+ * The AgentScape viewport (M1-T1, extended M3-T1).
  *
- * A thin render-layer shell around the React Three Fiber `<Canvas>`. The
- * scene is deliberately EMPTY right now — a single background colour — because
- * nothing in the data layer that feeds it exists yet: the typed trace contract
- * (M1-T3), the `agent_messages` adapter (M1-T4), the normalized trace model
- * (M1-T5) and the force-directed layout (M2) all land before a single node,
- * arc or glyph can be drawn (M3). This task proves the viewport mounts and the
- * renderer boots; it does not attempt to render trace data.
+ * A thin render-layer shell around the React Three Fiber `<Canvas>`. With no
+ * `run` it is the empty scene M1-T1 landed (a single background colour) — the
+ * app shell boots and the renderer comes up with nothing to draw.
  *
- * Why an empty scene is the correct scope here: per the load-bearing
- * architectural rule (PRD §5), the render layer is a thin *consumer* of a pure,
- * fully unit-tested data layer. Landing render scaffolding before the data
- * contract exists would invert that dependency. So this is the shell half of
- * the split — the canvas, the camera and the boot callback — with the data
- * half arriving next.
+ * Given a `run` (M1-T5), it mounts the agent-node layer (M3-T1): one
+ * `InstancedMesh` of glowing nodes, one instance per agent, over the settled
+ * layout. Mounting a *fixture* into the app (data → layout → render, end to end)
+ * is M3-T6; this task lands the layer and the seam that hands it a run.
  *
  * `ready` flips once `onCreated` fires, which is the only honest signal that
  * separates "renderer created and rendering" from "blank canvas". It is what
  * lets the headless tests (jsdom has no GPU) assert the boot path ran.
  */
-export default function Viewport() {
+export interface ViewportProps {
+  /** The normalized run to render; omit for an empty scene. */
+  run?: TraceModel
+}
+
+export default function Viewport({ run }: ViewportProps) {
   const [ready, setReady] = useState(false)
 
   return (
@@ -33,8 +34,9 @@ export default function Viewport() {
         gl={{ antialias: true }}
         onCreated={() => setReady(true)}
       >
-        {/* M1-T1 scene: background only. Nodes/arcs/glyphs land in M3. */}
+        {/* M1-T1 scene: background only until a run is handed in (M3-T6 mounts one). */}
         <color attach="background" args={['#05070d']} />
+        {run !== undefined && <AgentNodeLayer run={run} />}
       </Canvas>
       {ready && (
         <span className="viewport-ready" data-testid="viewport-ready">
