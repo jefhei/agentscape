@@ -2,7 +2,7 @@
   "version": 1,
   "project": "agentscape",
   "current_milestone": "M3 — Scene Construction & Rendering",
-  "current_task": "M3-T1",
+  "current_task": "M3-T2",
   "completed_tasks": [
     "M1-T1",
     "M1-T2",
@@ -15,7 +15,8 @@
     "M2-T2",
     "M2-T3",
     "M2-T4",
-    "M2-T5"
+    "M2-T5",
+    "M3-T1"
   ],
   "milestones": [
     {
