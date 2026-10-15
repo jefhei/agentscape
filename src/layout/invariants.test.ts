@@ -459,6 +459,10 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       // The scene layer's pure half (M3-T1): the node plan composes positions
       // from the layout and must author none of its own either.
       'src/scene/nodes.ts',
+      // The scene layer's arc half (M3-T2): the arc plan sweeps tubes along the
+      // settled positions, and the shader module carries no coordinates at all.
+      'src/scene/arcs.ts',
+      'src/scene/arcShader.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')

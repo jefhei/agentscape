@@ -209,7 +209,12 @@ export interface NodeSceneOptions {
   style?: Partial<NodeSceneStyle>
 }
 
-/** Thrown when the layout and the attributes disagree about the agent set. */
+/**
+ * Thrown when a scene plan cannot be built coherently — the layout and the
+ * attributes disagree about the agent set (M3-T1), or an element the plan needs
+ * to draw (a node, an arc) references an agent the layout never placed. Shared
+ * by the whole scene layer so a caller can branch on one type.
+ */
 export class ScenePlanError extends Error {
   constructor(message: string) {
     super(message)

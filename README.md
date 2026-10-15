@@ -63,7 +63,25 @@ activity/intensity that re-derives from the model and maps monotonically into
 range, and an acyclic spawn lineage with consistent roles. The
 `findHandAuthoredCoordinates` scanner is the machine gate — a test uses it to
 prove the pure half of `src/` carries no hand-placed coordinate.
-Next: **M3-T1 — agent nodes as instanced glowing meshes**.
+The agent nodes (M3-T1) are landed in [`src/scene/`](src/scene/nodes.ts) —
+`buildNodeScenePlan` settles the layout and joins it with the attribute mapping
+into one instance per agent (position, radius, glow colour and a **finished
+instance matrix**, so the render half decides nothing), and `AgentNodeLayer`
+draws them as a single `InstancedMesh`: one draw call for the whole agent
+population, and no per-node mesh anywhere. The message arcs (M3-T2) are landed in
+[`src/scene/`](src/scene/arcs.ts) — `buildArcScenePlan` sweeps one tube per
+communication link along a bowed curve between the settled node positions into a
+**single batched geometry**, at the link's own width (M2-T3), and derives each
+arc's animation from the trace: the pulse rate from the channel's message volume
+and the pulse *direction* from the channel's **net** traffic — a balanced channel
+is parked rather than sent one way arbitrarily. `MessageArcLayer` uploads that
+batch and animates it with one `ShaderMaterial` whose GLSL is generated from the
+plan's own attribute/uniform contract, so the GPU half cannot silently drift from
+the tested pure half (`arcPulseParameter` is the reference implementation the
+shader mirrors; the GLSL itself is additionally compiled out of band with
+`glslangValidator` in GLSL ES 1.00 and desktop 1.10). Still one draw call for
+every arc — never one mesh per message.
+Next: **M3-T3 — tool-call glyphs orbiting their calling agent node**.
 
 ## Stack
 
