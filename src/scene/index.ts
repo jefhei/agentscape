@@ -15,6 +15,10 @@
  *   communication link into a single batched geometry, with the animation rule
  *   ({@link arcPulseParameter}) derived from the trace's traffic;
  *   {@link MessageArcLayer} uploads those buffers and runs the GLSL pulse.
+ * - **glyphs (M3-T3)** — {@link buildGlyphScenePlan} places one glyph per tool
+ *   call on a derived orbit around the agent that made the call, with the orbit
+ *   rule ({@link glyphMatrixAt}) as a pure function of time; {@link GlyphLayer}
+ *   keeps the single `InstancedMesh` in step with the frame clock.
  */
 export {
   DEFAULT_BASE_COLOR,
@@ -94,3 +98,40 @@ export type {
 
 export { default as MessageArcLayer } from './MessageArcLayer.tsx'
 export type { MessageArcLayerProps } from './MessageArcLayer.tsx'
+
+export {
+  DEFAULT_GLYPH_BASE_COLOR,
+  DEFAULT_GLYPH_DETAIL,
+  DEFAULT_GLYPH_EMISSIVE_INTENSITY,
+  DEFAULT_GLYPH_KIND_COLORS,
+  DEFAULT_GLYPH_KIND_SCALE,
+  DEFAULT_GLYPH_ORBIT_GAP,
+  DEFAULT_GLYPH_RING_GAP,
+  DEFAULT_GLYPHS_PER_RING,
+  DEFAULT_MAX_ORBIT_HZ,
+  DEFAULT_MAX_TILT,
+  DEFAULT_MIN_ORBIT_HZ,
+  DEFAULT_MIN_TILT,
+  GLYPH_KINDS,
+  GLYPH_LAYER_DRAW_CALLS,
+  buildGlyphScenePlan,
+  glyphInstance,
+  glyphMatrixAt,
+  glyphOrbitAngle,
+  glyphPositionAt,
+  glyphsForAgent,
+  writeGlyphMatrices,
+} from './glyphs.ts'
+
+export type {
+  GlyphInstance,
+  GlyphKind,
+  GlyphOrbit,
+  GlyphSceneOptions,
+  GlyphScenePlan,
+  GlyphSceneStyle,
+  GlyphSceneStyleOverrides,
+} from './glyphs.ts'
+
+export { default as GlyphLayer } from './GlyphLayer.tsx'
+export type { GlyphLayerProps } from './GlyphLayer.tsx'

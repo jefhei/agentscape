@@ -463,6 +463,9 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       // settled positions, and the shader module carries no coordinates at all.
       'src/scene/arcs.ts',
       'src/scene/arcShader.ts',
+      // The scene layer's glyph half (M3-T3): every glyph orbits the settled
+      // position of the agent that made the call, so it authors none of its own.
+      'src/scene/glyphs.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')
