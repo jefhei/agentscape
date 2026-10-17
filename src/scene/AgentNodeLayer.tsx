@@ -20,17 +20,21 @@ import type { NodeSceneOptions } from './nodes.ts'
  *
  * The instance matrix in the plan is translation × uniform scale, so the sphere
  * can be a plain unit-radius `sphereGeometry` (`radius = 1`) and each node's
- * `size` attribute becomes its scale. The glow gradient rides on the
- * InstancedMesh's per-instance colour — the only per-instance channel a standard
- * material exposes.
+ * `size` attribute becomes its scale. The glow rides on the InstancedMesh's
+ * per-instance colour — the only per-instance channel an unlit material exposes —
+ * and, since M3-T4, that colour *is* the node's calibrated HDR radiance: the
+ * material is deliberately **unlit** (`meshBasicMaterial`), because a node emits
+ * light rather than being lit by it. A standard material's `instanceColor` only
+ * tints its diffuse term, so the per-node glow would never reach the screen; the
+ * unlit material makes the calibrated radiance the pixel value, which is also what
+ * lets the bloom pass (M3-T4) key off it. Tone mapping stays ON, so the hot end of
+ * the radiance range rolls off instead of clipping.
  *
  * ## Not gated, by design
  *
  * jsdom has no GPU, so nothing about the rendered look is asserted in tests
  * (PRD §5). What *is* tested is the pure plan this component consumes; the look
- * itself is human-reviewed (M5-T5). The lighting rig and the bloom-honest
- * emissive calibration are M3-T4 — the material below is a working default, not
- * a calibrated one.
+ * itself is human-reviewed (M5-T5).
  *
  * A run with no agents renders nothing (the layer returns `null`), matching the
  * plan's `drawCalls: 0` for an empty layer.
@@ -57,12 +61,6 @@ export default function AgentNodeLayer({ run, options }: AgentNodeLayerProps) {
   // re-render with the same run/options does not re-settle the layout.
   const plan = useMemo(() => buildNodeScenePlan(run, options), [run, options])
   const meshRef = useRef<THREE.InstancedMesh | null>(null)
-
-  // The one shared material colour: the per-instance colour below modulates it.
-  const baseColor = useMemo(
-    () => new THREE.Color(...plan.style.baseColor),
-    [plan.style.baseColor],
-  )
 
   useEffect(() => {
     const mesh = meshRef.current
@@ -92,15 +90,11 @@ export default function AgentNodeLayer({ run, options }: AgentNodeLayerProps) {
       frustumCulled={false}
     >
       <sphereGeometry args={[1, plan.style.segments, plan.style.segments]} />
-      {/* Emissive calibration (bloom rig) is M3-T4; this is a working default. */}
-      <meshStandardMaterial
-        color={baseColor}
-        emissive={baseColor}
-        emissiveIntensity={plan.style.emissiveIntensity}
-        roughness={0.3}
-        metalness={0}
-        toneMapped={false}
-      />
+      {/* Unlit emitter (M3-T4): the per-instance colour carries the calibrated
+          HDR radiance, and tone mapping (the rig sets ACESFilmic) rolls the hot
+          end off instead of clipping it. White base so the instance colour is
+          not modulated twice. */}
+      <meshBasicMaterial color="#ffffff" toneMapped />
     </instancedMesh>
   )
 }

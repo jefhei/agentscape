@@ -53,11 +53,11 @@
  * ## Scope
  *
  * Deliberately NOT here: the arcs (M3-T2), the tool-call glyphs (M3-T3), the
- * lighting / bloom rig and the final emissive calibration that makes bright read
- * as "hot, not blown out" (M3-T4) — the base colour + emissive intensity below
- * are tunable placeholders for that pass, not a calibration — and the mounting
- * of a fixture trace into the app (M3-T6). This task is the node instancing
- * plan and the mesh that draws it.
+ * lighting rig itself and the bloom pass (M3-T4, `environment.ts` +
+ * `EnvironmentRig.tsx`) — this module only *consumes* that task's
+ * {@link EmissiveCalibration} to turn an activity value into a calibrated HDR
+ * radiance, which is the join that makes "bright reads as hot, not blown out"
+ * true per node. Mounting a fixture trace into the app is M3-T6.
  */
 
 import type { AgentId } from '../types/index.ts'
@@ -71,23 +71,27 @@ import type {
   TraceAttributes,
   Vec3,
 } from '../layout/index.ts'
+import { DEFAULT_EMISSIVE_CALIBRATION, glowColor, glowRadiance } from './environment.ts'
+import type { EmissiveCalibration } from './environment.ts'
+import type { Rgb } from './color.ts'
+
+export type { Rgb } from './color.ts'
 
 // ── Tunables ────────────────────────────────────────────────────────────────
 
 /**
- * Base linear RGB the per-instance glow multiplies. A cool, near-white blue —
- * deliberate but **not calibrated**: picking the hue and the bloom response so
- * that bright reads as "hot" is M3-T4's job (`environment and lighting rig with
- * bloom-honest emissive calibration`), and the look itself is human-reviewed
- * (M5-T5). Values are in linear RGB and may exceed `1` for bloom headroom.
+ * Base linear RGB whose *hue* the per-instance glow takes. From M3-T4 the
+ * magnitude is no longer `baseColor × emissive`: the node plan rescales this hue
+ * to the calibrated radiance ({@link glowColor}) so brightness encodes activity
+ * and only the hue is a style choice. Picking the hue is still a look decision,
+ * human-reviewed (M5-T5).
  */
 export const DEFAULT_BASE_COLOR: Rgb = [0.62, 0.82, 1]
 
 /**
- * Uniform emissive strength the material is configured with. `1` means the base
- * colour *is* the emissive reading; only M3-T4 should move this once the bloom
- * rig exists to justify it. The per-node variation comes from the per-instance
- * glow colour, not from this scalar.
+ * Overall gain on the calibrated node glow. `1` means "exactly as the M3-T4
+ * calibration solved it"; anything else is a deliberate deviation from the
+ * calibrated reading (a human tuning the look), which is why it defaults to `1`.
  */
 export const DEFAULT_EMISSIVE_INTENSITY = 1
 
@@ -106,9 +110,6 @@ export const DEFAULT_SEGMENTS = 24
 export const NODE_LAYER_DRAW_CALLS = 1
 
 // ── Public shapes ───────────────────────────────────────────────────────────
-
-/** A linear RGB colour as a `[r, g, b]` tuple (plain numbers — no three.js). */
-export type Rgb = [number, number, number]
 
 /**
  * A column-major 4×4 transform, in the same element order three.js
@@ -137,12 +138,14 @@ export type Matrix16 = [
 
 /** The geometry/material scalars the render layer applies to the node mesh. */
 export interface NodeSceneStyle {
-  /** Base linear RGB the per-instance glow multiplies. */
+  /** Base linear RGB whose hue the per-instance glow takes. */
   baseColor: Rgb
-  /** Uniform emissive strength (see {@link DEFAULT_EMISSIVE_INTENSITY}). */
+  /** Gain on the calibrated glow (`1` = the calibration's own reading). */
   emissiveIntensity: number
   /** Sphere geometry width/height segments. */
   segments: number
+  /** The M3-T4 emissive calibration the per-instance radiance is solved with. */
+  calibration: EmissiveCalibration
 }
 
 /**
@@ -161,10 +164,18 @@ export interface NodeInstance {
   /** Emissive multiplier — the attribute mapper's `emissive` (M2-T3). */
   emissive: number
   /**
-   * Per-instance glow colour: the style's base colour scaled by `emissive`, so
-   * a busier node is brighter (toward the base hue) and a quiet one dimmer.
-   * This is the only per-instance channel a standard material exposes, which is
-   * why the glow gradient rides on colour; M3-T4 owns the final calibration.
+   * Linear HDR radiance this node emits (M3-T4): the calibrated glow magnitude,
+   * after the style's gain. Above `1` for the hottest nodes, which is what gives
+   * the bloom pass something to pick up.
+   */
+  radiance: number
+  /**
+   * Per-instance glow colour: the style's base **hue** rescaled to `radiance`, so
+   * the colour's luminance *is* the node's calibrated brightness. This is the only
+   * per-instance channel an unlit material exposes, which is why the glow rides on
+   * colour — and why the node material is unlit (a node is an emitter, not a lit
+   * surface; a lit material's `instanceColor` would only tint its diffuse term and
+   * the per-node glow would never reach the screen).
    */
   color: Rgb
   /** Column-major transform (translation × uniform scale) for the InstancedMesh. */
@@ -251,6 +262,7 @@ function resolveStyle(overrides: Partial<NodeSceneStyle> | undefined): NodeScene
       DEFAULT_EMISSIVE_INTENSITY,
     ),
     segments: Math.max(3, Math.floor(component(overrides?.segments, DEFAULT_SEGMENTS))),
+    calibration: overrides?.calibration ?? DEFAULT_EMISSIVE_CALIBRATION,
   }
 }
 
@@ -315,17 +327,20 @@ export function buildNodeScenePlan(
     // re-use can never mutate a plan that has already been handed out.
     const point: Vec3 = { x: position.x, y: position.y, z: position.z }
     const emissive = node.emissive
-    const color: Rgb = [
-      style.baseColor[0] * emissive,
-      style.baseColor[1] * emissive,
-      style.baseColor[2] * emissive,
-    ]
+    // M3-T4: the glow is calibrated, not a straight multiply. The hue comes from
+    // the style, the magnitude from the node's activity through the solved
+    // activity→radiance curve, and the style's gain scales the result.
+    const calibration = style.calibration
+    const gain = style.emissiveIntensity
+    const glow = glowColor(calibration, style.baseColor, emissive)
+    const color: Rgb = [glow[0] * gain, glow[1] * gain, glow[2] * gain]
     return {
       agentId: node.agentId,
       position: point,
       radius: node.size,
       intensity: node.intensity,
       emissive,
+      radiance: glowRadiance(calibration, emissive) * gain,
       color,
       matrix: composeNodeMatrix(point, node.size),
     }

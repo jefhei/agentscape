@@ -19,6 +19,11 @@
  *   call on a derived orbit around the agent that made the call, with the orbit
  *   rule ({@link glyphMatrixAt}) as a pure function of time; {@link GlyphLayer}
  *   keeps the single `InstancedMesh` in step with the frame clock.
+ * - **environment (M3-T4)** — {@link buildEnvironmentPlan} derives the background,
+ *   fog band, four-light rig, tone mapping and the bloom threshold from the
+ *   settled cloud's extent, and solves the *bloom-honest emissive calibration*
+ *   ({@link glowRadiance}) that the node plan emits with; {@link EnvironmentRig}
+ *   applies it.
  */
 export {
   DEFAULT_BASE_COLOR,
@@ -135,3 +140,61 @@ export type {
 
 export { default as GlyphLayer } from './GlyphLayer.tsx'
 export type { GlyphLayerProps } from './GlyphLayer.tsx'
+
+// ── environment / lighting / bloom (M3-T4) ─────────────────────────────────
+
+export {
+  BLOOM_KNEE_ACTIVITY,
+  BLOOM_KNEE_DISPLAY_LUMINANCE,
+  DEFAULT_BACKGROUND_HEX,
+  DEFAULT_EMISSIVE_CALIBRATION,
+  DEFAULT_EXPOSURE,
+  DEFAULT_FOG_FAR_MARGIN,
+  DEFAULT_FOG_HEX,
+  DEFAULT_FOG_NEAR_MARGIN,
+  DEFAULT_FOV,
+  DEFAULT_LIGHT_DISTANCE_FACTOR,
+  DEFAULT_VIEW_DISTANCE,
+  ENVIRONMENT_DRAW_CALLS,
+  ENVIRONMENT_POST_PROCESS_PASSES,
+  EnvironmentRigError,
+  HOT_DISPLAY_LUMINANCE,
+  QUIET_DISPLAY_LUMINANCE,
+  blooms,
+  buildEnvironmentPlan,
+  displayLuminance,
+  glowColor,
+  glowRadiance,
+  resolveCalibration,
+} from './environment.ts'
+
+export type {
+  AmbientOverrides,
+  BloomSpec,
+  CalibrationOverrides,
+  DirectionalLightSpec,
+  DirectionalOverrides,
+  EmissiveCalibration,
+  EnvironmentOptions,
+  EnvironmentPlan,
+  EnvironmentRigOverrides,
+  FogSpec,
+  HemisphereLightSpec,
+  HemisphereOverrides,
+  LightRig,
+  LightSpec,
+  ToneMappingName,
+} from './environment.ts'
+
+export {
+  LUMINANCE_WEIGHTS,
+  hexToLinearRgb,
+  isHexColor,
+  luminanceOf,
+  scaleToLuminance,
+} from './color.ts'
+
+export { ToneMappingError, acesFilmic, inverseAcesFilmic } from './toneMapping.ts'
+
+export { default as EnvironmentRig } from './EnvironmentRig.tsx'
+export type { EnvironmentRigProps } from './EnvironmentRig.tsx'

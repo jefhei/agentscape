@@ -466,6 +466,12 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       // The scene layer's glyph half (M3-T3): every glyph orbits the settled
       // position of the agent that made the call, so it authors none of its own.
       'src/scene/glyphs.ts',
+      // The scene layer's rig (M3-T4): the light offsets and the fog band are
+      // derived from the settled cloud's extent (spherical angles, never a
+      // literal triple), and the calibration emits colour, not position.
+      'src/scene/environment.ts',
+      'src/scene/color.ts',
+      'src/scene/toneMapping.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')

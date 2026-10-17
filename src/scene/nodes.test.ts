@@ -23,6 +23,13 @@ import {
   composeNodeMatrix,
   nodeInstance,
 } from './nodes.ts'
+import {
+  DEFAULT_EMISSIVE_CALIBRATION,
+  displayLuminance,
+  glowRadiance,
+  resolveCalibration,
+} from './environment.ts'
+import { luminanceOf } from './color.ts'
 
 /**
  * Pure-layer tests for the agent-node scene plan (M3-T1).
@@ -137,16 +144,19 @@ describe('node scene plan — structure (M3-T1)', () => {
 
 // ── glow colour ─────────────────────────────────────────────────────────────
 
-describe('node scene plan — glow colour (M3-T1)', () => {
-  it('scales the base colour by each node’s emissive multiplier', () => {
+describe('node scene plan — glow colour (M3-T1, calibrated M3-T4)', () => {
+  it('rescales the base hue to each node’s calibrated radiance', () => {
     const plan = buildNodeScenePlan(FIXTURES[0].run)
     for (const instance of plan.instances) {
-      for (let channel = 0; channel < 3; channel += 1) {
-        expect(instance.color[channel]).toBeCloseTo(
-          DEFAULT_BASE_COLOR[channel] * instance.emissive,
-          12,
-        )
-      }
+      expect(instance.radiance).toBeCloseTo(
+        glowRadiance(plan.style.calibration, instance.emissive),
+        12,
+      )
+      // Brightness is activity, hue is style: the colour's luminance is the
+      // calibrated radiance, whatever the base colour happens to be.
+      expect(luminanceOf(instance.color)).toBeCloseTo(instance.radiance, 10)
+      const ratio = DEFAULT_BASE_COLOR[1] / DEFAULT_BASE_COLOR[0]
+      expect(instance.color[1] / instance.color[0]).toBeCloseTo(ratio, 10)
     }
   })
 
@@ -160,7 +170,21 @@ describe('node scene plan — glow colour (M3-T1)', () => {
       instance.intensity < min.intensity ? instance : min,
     )
     expect(orchestrator.emissive).toBeGreaterThan(quietest.emissive)
+    expect(orchestrator.radiance).toBeGreaterThan(quietest.radiance)
     expect(orchestrator.color[2]).toBeGreaterThan(quietest.color[2])
+  })
+
+  it('gives the hot node HDR headroom and keeps it under the blow-out bound', () => {
+    // The whole point of M3-T4: the busiest node emits above 1.0 (so the bloom
+    // pass has something to catch) while still displaying short of white.
+    const plan = buildNodeScenePlan(FIXTURES[0].run)
+    const hottest = plan.instances.reduce((max, instance) =>
+      instance.radiance > max.radiance ? instance : max,
+    )
+    expect(hottest.radiance).toBeGreaterThan(1)
+    expect(displayLuminance(plan.style.calibration, hottest.emissive)).toBeLessThan(
+      0.95,
+    )
   })
 })
 
@@ -301,9 +325,15 @@ describe('node scene plan — style (M3-T1)', () => {
     expect(plan.style.emissiveIntensity).toBe(2)
     expect(plan.style.segments).toBe(3)
     const instance = plan.instances[0]
-    expect(instance.color[0]).toBeCloseTo(0.1 * instance.emissive, 12)
-    expect(instance.color[1]).toBeCloseTo(0.2 * instance.emissive, 12)
-    expect(instance.color[2]).toBeCloseTo(0.3 * instance.emissive, 12)
+    // The gain scales the calibrated radiance (2× brighter than calibrated) and
+    // the base colour still only supplies the hue.
+    expect(instance.radiance).toBeCloseTo(
+      2 * glowRadiance(plan.style.calibration, instance.emissive),
+      12,
+    )
+    expect(luminanceOf(instance.color)).toBeCloseTo(instance.radiance, 10)
+    expect(instance.color[1] / instance.color[0]).toBeCloseTo(0.2 / 0.1, 10)
+    expect(instance.color[2] / instance.color[0]).toBeCloseTo(0.3 / 0.1, 10)
   })
 
   it('defaults every style field deterministically', () => {
@@ -311,6 +341,19 @@ describe('node scene plan — style (M3-T1)', () => {
     expect(plan.style.baseColor).toEqual(DEFAULT_BASE_COLOR)
     expect(plan.style.emissiveIntensity).toBe(DEFAULT_EMISSIVE_INTENSITY)
     expect(plan.style.segments).toBe(DEFAULT_SEGMENTS)
+    expect(plan.style.calibration).toBe(DEFAULT_EMISSIVE_CALIBRATION)
+  })
+
+  it('accepts an alternative calibration and applies it to the glow', () => {
+    const calibration = resolveCalibration({ hotDisplay: 0.7, bloomKneeDisplay: 0.6 })
+    const plan = buildNodeScenePlan(FIXTURES[0].run, { style: { calibration } })
+    expect(plan.style.calibration).toBe(calibration)
+    for (const instance of plan.instances) {
+      expect(instance.radiance).toBeCloseTo(
+        glowRadiance(calibration, instance.emissive),
+        12,
+      )
+    }
   })
 
   it('sanitizes a bad base colour back to the default per component', () => {
