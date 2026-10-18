@@ -2,6 +2,8 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { FIXTURES } from '../fixtures/index.ts'
+import { parseAgentMessagesExport } from '../adapter/index.ts'
+import { normalizeTrace } from '../model/index.ts'
 import { findHandAuthoredCoordinates, settleLayout } from '../layout/index.ts'
 import {
   BLOOM_KNEE_DISPLAY_LUMINANCE,
@@ -361,6 +363,19 @@ describe('environment plan (M3-T4)', () => {
     expect(empty.extentRadius).toBeGreaterThan(0)
     expect(empty.fog.far).toBeGreaterThan(empty.fog.near)
     expect(empty.backgroundHex).toBe(DEFAULT_BACKGROUND_HEX)
+  })
+
+  it('adds no bloom pass to a scene with no extent, even when a layout is reused', () => {
+    // A reused layout still yields bounds, so "bounds !== null" is not enough:
+    // a cloud of radius 0 has no hot region to bloom, and paying for the pass
+    // would be cost with no image (the M3-T5 measurement surfaced this).
+    const empty = normalizeTrace(parseAgentMessagesExport([], { label: 'empty' }))
+    const { layout } = settleLayout(empty)
+    expect(layout.bounds.radius).toBe(0)
+    const plan = buildEnvironmentPlan(empty, { layout })
+    expect(plan.bounds).not.toBeNull()
+    expect(plan.bloom.enabled).toBe(false)
+    expect(plan.postProcessPasses).toBe(0)
   })
 
   it('costs no draw call — lights and fog are not geometry', () => {

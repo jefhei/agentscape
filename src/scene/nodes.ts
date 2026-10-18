@@ -62,7 +62,7 @@
 
 import type { AgentId } from '../types/index.ts'
 import type { TraceModel } from '../model/index.ts'
-import { mapTraceAttributes, settleLayout } from '../layout/index.ts'
+import { isSettled, mapTraceAttributes, settleLayout } from '../layout/index.ts'
 import type {
   AttributeOptions,
   ForceLayout,
@@ -212,12 +212,21 @@ export interface NodeScenePlan {
 
 /** Optional overrides for {@link buildNodeScenePlan}. All deterministically defaulted. */
 export interface NodeSceneOptions {
-  /** Passed through to the settlement pass (M2-T2). */
+  /** Passed through to the settlement pass (M2-T2) when no layout is given. */
   settlement?: SettlementOptions
-  /** Passed through to the attribute mapper (M2-T3). */
+  /** Passed through to the attribute mapper (M2-T3) when no map is given. */
   attributes?: AttributeOptions
   /** Style overrides; each field independently defaults (see the `DEFAULT_*` above). */
   style?: Partial<NodeSceneStyle>
+  /**
+   * A layout to reuse instead of settling again — the same shape the sibling
+   * layers (arcs, glyphs, rig) draw, so one scene pays for the relaxation once
+   * rather than once per layer (the seam M3-T5's budget measurement uses, and
+   * M3-T6 adopts when it mounts a run).
+   */
+  layout?: ForceLayout
+  /** An attribute map to reuse instead of re-mapping (see `layout`). */
+  attributeMap?: TraceAttributes
 }
 
 /**
@@ -298,8 +307,9 @@ export function composeNodeMatrix(position: Vec3, radius: number): Matrix16 {
  * origin.
  *
  * @param model a normalized trace (M1-T5).
- * @param options settlement / attribute / style overrides — all deterministically
- *        defaulted.
+ * @param options settlement / attribute / style overrides, plus an optional
+ *        already-computed `layout` / `attributeMap` to reuse — the shapes a
+ *        sibling layer drew, so one scene settles once.
  * @throws ScenePlanError when the settled layout has no position for an agent
  *         the attribute mapper produced — impossible for a coherent model, so
  *         it fails loudly rather than silently dropping a node.
@@ -309,8 +319,21 @@ export function buildNodeScenePlan(
   options: NodeSceneOptions = {},
 ): NodeScenePlan {
   const style = resolveStyle(options.style)
-  const { layout, converged, iterations } = settleLayout(model, options.settlement)
-  const attributes = mapTraceAttributes(model, options.attributes)
+
+  // Reuse a supplied layout/attribute map when there is one (the relaxation and
+  // the mapping are the caller's to pay for once), otherwise derive them.
+  let layout: ForceLayout
+  let converged: boolean
+  if (options.layout !== undefined) {
+    layout = options.layout
+    converged = isSettled(layout, options.settlement?.energyTolerance)
+  } else {
+    const settled = settleLayout(model, options.settlement)
+    layout = settled.layout
+    converged = settled.converged
+  }
+  const attributes =
+    options.attributeMap ?? mapTraceAttributes(model, options.attributes)
 
   // Positions by agent: the layout is the sole owner of "where".
   const positionById = new Map<AgentId, Vec3>()
@@ -357,7 +380,7 @@ export function buildNodeScenePlan(
     bounds: layout.bounds,
     seed: layout.seed,
     converged,
-    iterations,
+    iterations: layout.iterations,
   }
 }
 

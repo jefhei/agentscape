@@ -472,6 +472,9 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       'src/scene/environment.ts',
       'src/scene/color.ts',
       'src/scene/toneMapping.ts',
+      // The draw-call budget (M3-T5) measures the plans above; it composes no
+      // geometry of its own, so it must author no coordinates either.
+      'src/scene/budget.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')

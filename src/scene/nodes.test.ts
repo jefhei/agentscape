@@ -379,6 +379,27 @@ describe('node scene plan — style (M3-T1)', () => {
     expect(plan.layout.seed).toBe(12345)
   })
 
+  it('reuses a supplied layout and attribute map instead of re-deriving them', () => {
+    const model = FIXTURES[1].run
+    const settled = settleLayout(model)
+    const attributes = mapTraceAttributes(model)
+    const reused = buildNodeScenePlan(model, {
+      layout: settled.layout,
+      attributeMap: attributes,
+    })
+    // The same numbers the deriving path produces — reuse is not a new shape.
+    expect(JSON.stringify(reused.instances)).toBe(
+      JSON.stringify(buildNodeScenePlan(model).instances),
+    )
+    // ...but the caller's layout and map are the ones the plan carries, so a
+    // scene can settle once and hand the shape to every layer (M3-T5).
+    expect(reused.layout).toBe(settled.layout)
+    expect(reused.attributes).toBe(attributes)
+    expect(reused.iterations).toBe(settled.layout.iterations)
+    expect(reused.converged).toBe(true)
+    expect(reused.seed).toBe(settled.layout.seed)
+  })
+
   it('surfaces a ScenePlanError rather than silently dropping a node', () => {
     // The error type is exported and named, so a caller can branch on it.
     const error = new ScenePlanError('no layout position for agent a_x')

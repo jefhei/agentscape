@@ -652,7 +652,12 @@ export function buildEnvironmentPlan(
   }
 
   // ── bloom ──
-  const bloomEnabled = bounds !== null
+  // Bloom needs something that can cross the knee: a cloud with no extent — an
+  // empty run, or a lone agent parked at the origin — has no hot region, so the
+  // pass would be a full-screen cost that can never fire. Requiring a positive
+  // radius is what keeps an empty scene (including one whose layout was reused,
+  // M3-T5) from paying for a pass with nothing to bloom.
+  const bloomEnabled = bounds !== null && bounds.radius > 0
   const bloom: BloomSpec = {
     enabled: bloomEnabled,
     intensity: clampOption(rig.bloom?.intensity, 1.15, 0, 100),

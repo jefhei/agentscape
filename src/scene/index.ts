@@ -198,3 +198,27 @@ export { ToneMappingError, acesFilmic, inverseAcesFilmic } from './toneMapping.t
 
 export { default as EnvironmentRig } from './EnvironmentRig.tsx'
 export type { EnvironmentRigProps } from './EnvironmentRig.tsx'
+
+// ── draw-call budget (M3-T5) ────────────────────────────────────────────────
+
+export {
+  DRAW_CALL_CEILING,
+  DrawCallBudgetError,
+  MAX_MESH_SITES_PER_COMPONENT,
+  SCENE_LAYER_DRAW_CALLS,
+  SCENE_LAYER_NAMES,
+  assertDrawCallBudget,
+  findMeshConstructionSites,
+  layerBudget,
+  measureSceneBudget,
+} from './budget.ts'
+
+export type {
+  LayerBudget,
+  MeshConstructionSite,
+  MeshSiteTag,
+  SceneBudget,
+  SceneBudgetOptions,
+  SceneLayerName,
+  ScenePlans,
+} from './budget.ts'
