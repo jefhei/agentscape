@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { TraceModel } from '../model/index.ts'
 import { buildGlyphScenePlan, writeGlyphMatrices } from './glyphs.ts'
-import type { GlyphSceneOptions } from './glyphs.ts'
+import type { GlyphSceneOptions, GlyphScenePlan } from './glyphs.ts'
 
 /**
  * Tool-call glyphs orbiting their calling agent node (M3-T3) — the render half.
@@ -57,22 +57,32 @@ import type { GlyphSceneOptions } from './glyphs.ts'
 export interface GlyphLayerProps {
   /** The normalized run to draw (M1-T5). */
   run: TraceModel
-  /** Optional plan overrides (settlement / attributes / style / reuse). */
+  /**
+   * A plan already built for this run — from {@link buildScenePlan} (M3-T6), so the
+   * whole scene shares one settlement. Used as-is; when omitted the layer derives
+   * its own plan from `run` (the standalone path).
+   */
+  plan?: GlyphScenePlan
+  /** Optional plan overrides (settlement / attributes / style / reuse) — ignored when `plan` is given. */
   options?: GlyphSceneOptions
 }
 
-export default function GlyphLayer({ run, options }: GlyphLayerProps) {
+export default function GlyphLayer({ run, plan, options }: GlyphLayerProps) {
   // Rebuilding the plan is pure and cheap relative to a frame; memoized so a
-  // re-render with the same run/options does not re-settle the layout.
-  const plan = useMemo(() => buildGlyphScenePlan(run, options), [run, options])
+  // re-render with the same run/options does not re-settle the layout. A supplied
+  // plan wins, which is how the mounted scene pays for one settlement, not four.
+  const resolved = useMemo(
+    () => plan ?? buildGlyphScenePlan(run, options),
+    [plan, run, options],
+  )
   const meshRef = useRef<THREE.InstancedMesh | null>(null)
 
   // The glyph surface is drawn neutral; the per-instance colour below supplies
   // the kind's hue (see the module note on why the glow cannot).
   const surfaceColor = useMemo(() => new THREE.Color(1, 1, 1), [])
   const glowColor = useMemo(
-    () => new THREE.Color(...plan.style.baseColor),
-    [plan.style.baseColor],
+    () => new THREE.Color(...resolved.style.baseColor),
+    [resolved.style.baseColor],
   )
 
   // Static per-instance data: the plan's colours, and the orbits at time zero so
@@ -81,17 +91,17 @@ export default function GlyphLayer({ run, options }: GlyphLayerProps) {
     const mesh = meshRef.current
     if (mesh === null) return
     const color = new THREE.Color()
-    for (let index = 0; index < plan.glyphs.length; index += 1) {
-      const glyph = plan.glyphs[index]
+    for (let index = 0; index < resolved.glyphs.length; index += 1) {
+      const glyph = resolved.glyphs[index]
       color.setRGB(glyph.color[0], glyph.color[1], glyph.color[2])
       mesh.setColorAt(index, color)
     }
     if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true
     const buffer = mesh.instanceMatrix.array as Float32Array
-    writeGlyphMatrices(plan.glyphs, 0, buffer)
+    writeGlyphMatrices(resolved.glyphs, 0, buffer)
     mesh.instanceMatrix.needsUpdate = true
     mesh.computeBoundingSphere()
-  }, [plan])
+  }, [resolved])
 
   // The one tick the render layer owns: advance the orbits. The rule it feeds
   // (./glyphs.ts `glyphMatrixAt`) is pure and unit-tested. Called
@@ -100,24 +110,24 @@ export default function GlyphLayer({ run, options }: GlyphLayerProps) {
     const mesh = meshRef.current
     if (mesh === null) return
     const buffer = mesh.instanceMatrix.array as Float32Array
-    writeGlyphMatrices(plan.glyphs, state.clock.elapsedTime * 1000, buffer)
+    writeGlyphMatrices(resolved.glyphs, state.clock.elapsedTime * 1000, buffer)
     mesh.instanceMatrix.needsUpdate = true
   })
 
-  if (plan.count === 0) return null
+  if (resolved.count === 0) return null
 
   return (
     <instancedMesh
       ref={meshRef}
-      args={[undefined, undefined, plan.count]}
+      args={[undefined, undefined, resolved.count]}
       frustumCulled={false}
     >
-      <octahedronGeometry args={[1, plan.style.detail]} />
+      <octahedronGeometry args={[1, resolved.style.detail]} />
       {/* Emissive calibration (bloom rig) is M3-T4; this is a working default. */}
       <meshStandardMaterial
         color={surfaceColor}
         emissive={glowColor}
-        emissiveIntensity={plan.style.emissiveIntensity}
+        emissiveIntensity={resolved.style.emissiveIntensity}
         roughness={0.35}
         metalness={0}
         toneMapped={false}

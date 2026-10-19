@@ -475,6 +475,11 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       // The draw-call budget (M3-T5) measures the plans above; it composes no
       // geometry of its own, so it must author no coordinates either.
       'src/scene/budget.ts',
+      // The whole-scene plan (M3-T6) composes those plans and frames the cloud
+      // with the rig's own distance: the camera direction comes from spherical
+      // angles and the target from the settled bounds' centre, so — like the
+      // rig — it carries no hand-placed coordinate.
+      'src/scene/scenePlan.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')

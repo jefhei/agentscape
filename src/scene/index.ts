@@ -222,3 +222,19 @@ export type {
   SceneLayerName,
   ScenePlans,
 } from './budget.ts'
+
+// ── the whole scene (M3-T6) ─────────────────────────────────────────────────
+
+export {
+  CAMERA_AZIMUTH_DEG,
+  CAMERA_ELEVATION_DEG,
+  CAMERA_FAR_MARGIN,
+  CAMERA_NEAR,
+  buildScenePlan,
+  sceneCamera,
+} from './scenePlan.ts'
+
+export type { SceneCamera, SceneCounts, SceneOptions, ScenePlan } from './scenePlan.ts'
+
+export { default as Scene } from './Scene.tsx'
+export type { SceneProps } from './Scene.tsx'

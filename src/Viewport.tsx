@@ -1,42 +1,70 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import type { TraceModel } from './model/index.ts'
-import AgentNodeLayer from './scene/AgentNodeLayer.tsx'
-import MessageArcLayer from './scene/MessageArcLayer.tsx'
-import GlyphLayer from './scene/GlyphLayer.tsx'
+import Scene from './scene/Scene.tsx'
 import EnvironmentRig from './scene/EnvironmentRig.tsx'
 import { buildEnvironmentPlan } from './scene/environment.ts'
+import type { EnvironmentPlan } from './scene/environment.ts'
+import { buildScenePlan, sceneCamera } from './scene/scenePlan.ts'
+import type { SceneCamera } from './scene/scenePlan.ts'
+
+/** The rig's tone-mapping name (M3-T4) → the three.js constant that applies it. */
+const TONE_MAPPING: Record<EnvironmentPlan['toneMapping'], THREE.ToneMapping> = {
+  ACESFilmic: THREE.ACESFilmicToneMapping,
+}
 
 /**
- * The AgentScape viewport (M1-T1, extended M3-T1..M3-T4).
+ * Applies the scene's camera plan to the renderer's camera.
+ *
+ * The camera *numbers* — position, look-at target, fov, near, far — are decided by
+ * the pure layer (`sceneCamera`, M3-T6), which frames the settled cloud's centre
+ * with the rig's own framing distance and field of view. This component is the
+ * only place that touches the `PerspectiveCamera`, which is exactly the kind of
+ * thing the data layer cannot do. R3F creates its default camera looking at the
+ * origin; without this, a cloud that settled off-centre would render off-centre.
+ */
+function CameraRig({ camera }: { camera: SceneCamera }) {
+  const three = useThree((state) => state.camera)
+  useLayoutEffect(() => {
+    three.position.set(camera.position.x, camera.position.y, camera.position.z)
+    three.lookAt(camera.target.x, camera.target.y, camera.target.z)
+    if (three instanceof THREE.PerspectiveCamera) {
+      three.fov = camera.fov
+      three.near = camera.near
+      three.far = camera.far
+      three.updateProjectionMatrix()
+    }
+  }, [three, camera])
+  return null
+}
+
+/**
+ * The AgentScape viewport (M1-T1, mounted scene since M3-T6).
  *
  * A thin render-layer shell around the React Three Fiber `<Canvas>`. With no
- * `run` it is the empty scene M1-T1 landed: the rig's background and lights, and
- * nothing to draw.
+ * `run` it is the empty scene M1-T1 landed: the rig's background, fog and lights,
+ * and nothing to draw.
  *
- * Given a `run` (M1-T5), it mounts the scene layers: the environment/lighting/
- * bloom rig (M3-T4), the agent-node layer (M3-T1, one `InstancedMesh` of glowing
- * nodes over the settled layout), the message-arc layer (M3-T2, one batched
- * geometry of animated tubes, one per communication link) and the tool-call glyph
- * layer (M3-T3, one `InstancedMesh` of marks orbiting the agent that made each
- * call). Mounting a *fixture* into the app (data → layout → render, end to end) is
- * M3-T6.
+ * Given a `run` (M1-T5), it composes the scene **once** — {@link buildScenePlan},
+ * one settlement, one attribute map, all four layer plans — and mounts it as one
+ * `<Scene>`. Composing here rather than inside each layer is what makes the whole
+ * scene agree structurally: the nodes, arcs, glyphs and rig are built from the
+ * same layout object and attribute map, not from four independent derivations, and
+ * the camera, the fog band and the framing distance all come from the same plan.
  *
- * This shell owns two things the scene graph cannot: the camera framing, and the
- * renderer's tone mapping and exposure. Both are read from the rig plan rather
- * than written here, so the fog band, the framing distance and the emissive
- * calibration are single-sourced (`scene/environment.ts`) and cannot drift apart.
+ * The shell owns two things the scene graph cannot: the renderer's tone mapping /
+ * exposure (read from the rig plan, so the emissive calibration and the renderer
+ * cannot disagree) and the camera plan application ({@link CameraRig}). Everything
+ * else — what to draw and where — was decided in `src/scene/`.
  *
- * Each layer derives the layout it needs from the same run, and all of them are
- * pure and deterministic, so the nodes, the arcs, the glyphs and the rig agree
- * exactly on the shape. M3-T6 consolidates those derivations into one shared scene
- * pass — the right place for it is the task that owns the mounted scene, and it is
- * also where the double settle an M3-T2 note flagged gets paid down.
+ * The `data-*` attributes on the wrapper are not UI: they are how a headless test
+ * asserts that a run really reached the renderer (jsdom has no GPU, so a mounted
+ * scene cannot be inspected any other way). They are the run id and the measured
+ * draw-call total of the scene that was composed.
  *
  * `ready` flips once `onCreated` fires, which is the only honest signal that
- * separates "renderer created and rendering" from "blank canvas". It is what lets
- * the headless tests (jsdom has no GPU) assert the boot path ran.
+ * separates "renderer created and rendering" from "blank canvas".
  */
 export interface ViewportProps {
   /** The normalized run to render; omit for an empty scene. */
@@ -45,32 +73,52 @@ export interface ViewportProps {
 
 export default function Viewport({ run }: ViewportProps) {
   const [ready, setReady] = useState(false)
-  // Pure and deterministic, so this is safe to memoize on the run alone; the rig
-  // scales itself to the settled cloud's extent (M3-T4).
-  const environment = useMemo(() => buildEnvironmentPlan(run), [run])
+
+  // One scene pass for the whole run, memoized on the run alone: every plan below
+  // (and the camera) is derived from it. Pure and deterministic, so re-rendering
+  // with the same run rebuilds nothing.
+  const scene = useMemo(() => (run === undefined ? null : buildScenePlan(run)), [run])
+
+  // The empty scene still needs a rig — and a camera — so its frame matches what a
+  // loaded run would be framed with. Both fall back to the rig's own defaults.
+  const environment = useMemo(
+    () => scene?.environment ?? buildEnvironmentPlan(),
+    [scene],
+  )
+  const camera = useMemo(
+    () => scene?.camera ?? sceneCamera(environment, null),
+    [scene, environment],
+  )
 
   return (
-    <div className="viewport" data-testid="viewport">
+    <div
+      className="viewport"
+      data-testid="viewport"
+      data-run-id={scene?.runId}
+      data-draw-calls={scene?.drawCalls}
+    >
       <Canvas
         camera={{
-          fov: environment.fov,
-          near: 0.1,
-          far: environment.viewDistance * 10,
-          position: [0, 0, environment.viewDistance],
+          fov: camera.fov,
+          near: camera.near,
+          far: camera.far,
+          position: [camera.position.x, camera.position.y, camera.position.z],
         }}
         gl={{
           antialias: true,
           // The rig plan's tone mapping/exposure — the same numbers the emissive
           // calibration was solved against.
-          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMapping: TONE_MAPPING[environment.toneMapping],
           toneMappingExposure: environment.exposure,
         }}
         onCreated={() => setReady(true)}
       >
-        <EnvironmentRig plan={environment} />
-        {run !== undefined && <AgentNodeLayer run={run} />}
-        {run !== undefined && <MessageArcLayer run={run} />}
-        {run !== undefined && <GlyphLayer run={run} />}
+        <CameraRig camera={camera} />
+        {scene !== null ? (
+          <Scene plan={scene} />
+        ) : (
+          <EnvironmentRig plan={environment} />
+        )}
       </Canvas>
       {ready && (
         <span className="viewport-ready" data-testid="viewport-ready">

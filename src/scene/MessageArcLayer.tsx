@@ -57,7 +57,13 @@ import {
 export interface MessageArcLayerProps {
   /** The normalized run to draw (M1-T5). */
   run: TraceModel
-  /** Optional plan overrides (settlement / attributes / style / reuse). */
+  /**
+   * A plan already built for this run — from {@link buildScenePlan} (M3-T6), so the
+   * whole scene shares one settlement and one batched geometry. Used as-is; when
+   * omitted the layer derives its own plan from `run` (the standalone path).
+   */
+  plan?: ArcScenePlan
+  /** Optional plan overrides (settlement / attributes / style / reuse) — ignored when `plan` is given. */
   options?: ArcSceneOptions
 }
 
@@ -80,17 +86,21 @@ function buildArcGeometry(plan: ArcScenePlan): THREE.BufferGeometry {
   return geometry
 }
 
-export default function MessageArcLayer({ run, options }: MessageArcLayerProps) {
+export default function MessageArcLayer({ run, plan, options }: MessageArcLayerProps) {
   // Rebuilding the plan is pure; memoized so a re-render with the same
-  // run/options does not re-settle the layout.
-  const plan = useMemo(() => buildArcScenePlan(run, options), [run, options])
+  // run/options does not re-settle the layout. A supplied plan wins, which is how
+  // the mounted scene pays for one settlement, not four.
+  const resolved = useMemo(
+    () => plan ?? buildArcScenePlan(run, options),
+    [plan, run, options],
+  )
   const materialRef = useRef<THREE.ShaderMaterial | null>(null)
 
   // One geometry for the whole batch — or none, when there is nothing to draw
   // (an empty attribute buffer has no meaningful bounds).
   const geometry = useMemo(
-    () => (plan.count === 0 ? null : buildArcGeometry(plan)),
-    [plan],
+    () => (resolved.count === 0 ? null : buildArcGeometry(resolved)),
+    [resolved],
   )
 
   // Release the previous batch's GPU buffers when the plan changes or we unmount.
@@ -99,7 +109,7 @@ export default function MessageArcLayer({ run, options }: MessageArcLayerProps) 
     return () => geometry.dispose()
   }, [geometry])
 
-  const uniforms = useMemo(() => buildArcUniforms(plan.style), [plan.style])
+  const uniforms = useMemo(() => buildArcUniforms(resolved.style), [resolved.style])
 
   // The one tick the render layer owns: advance the pulse clock. The rule it
   // feeds (./arcs.ts `arcPulseParameter`) is pure and unit-tested.

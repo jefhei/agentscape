@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import App from './App'
+import App, { MOUNTED_RUN } from './App'
+import { DRAW_CALL_CEILING } from './scene/index.ts'
 
 /**
  * jsdom has no WebGL, so the real R3F <Canvas> cannot mount in tests. Swap it
@@ -50,5 +51,18 @@ describe('App shell (M1-T1)', () => {
     expect(await screen.findByTestId('viewport-ready')).toHaveTextContent(
       'viewport ready',
     )
+  })
+
+  it('mounts a fixture trace end to end (M3-T6)', () => {
+    render(<App />)
+    const viewport = screen.getByTestId('viewport')
+    // The run really reached the renderer: the id is the fixture's, and the
+    // fixture is a product of the real ingest path, not a hand-built Run.
+    expect(viewport).toHaveAttribute('data-run-id', MOUNTED_RUN.id)
+    expect(MOUNTED_RUN.source).toBe('agent_messages')
+    expect(MOUNTED_RUN.label.startsWith('fixture:')).toBe(true)
+    expect(MOUNTED_RUN.meta.agentCount).toBeGreaterThan(0)
+    // ...and the scene composed for it is inside the geometry budget.
+    expect(viewport).toHaveAttribute('data-draw-calls', String(DRAW_CALL_CEILING))
   })
 })

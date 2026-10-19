@@ -12,8 +12,9 @@ forces you to reconstruct by eye.
 ## Status
 
 Early build. Scaffold + PRD + build plan landed 2026-10-01; one task/day proceeds from
-`BUILD_PLAN.md`. The R3F viewport (M1-T1) is landed — an empty scene wired into the app
-shell, waiting on the trace data layer to give it something to draw. The five-part build
+`BUILD_PLAN.md`. The app boots on a rendered trace: a deterministic fixture run
+is laid out, lit and drawn (nodes, arcs, glyphs, bloom) in the real app, and the
+scene composition is measured against a 3-draw-call ceiling it provably holds. The five-part build
 gate is wired (M1-T2): `npm run verify` runs lint → format → typecheck → test → build.
 The typed trace contract (M1-T3) is landed in [`src/types/`](src/types/trace.ts) —
 `Run`, `Agent`, `Message`, `ToolCall` and the `Event` union every other module speaks.
@@ -80,8 +81,28 @@ plan's own attribute/uniform contract, so the GPU half cannot silently drift fro
 the tested pure half (`arcPulseParameter` is the reference implementation the
 shader mirrors; the GLSL itself is additionally compiled out of band with
 `glslangValidator` in GLSL ES 1.00 and desktop 1.10). Still one draw call for
-every arc — never one mesh per message.
-Next: **M3-T3 — tool-call glyphs orbiting their calling agent node**.
+every arc — never one mesh per message. The tool-call glyphs (M3-T3) are landed in
+[`src/scene/`](src/scene/glyphs.ts) — `buildGlyphScenePlan` puts one mark per tool
+call on a derived orbit around the agent that made it (radius clears the node,
+plane and phase de-synchronised per agent, rate keyed to the caller's activity,
+size/hue from the call's spawn/handoff/message kind), with the orbit rule a pure
+function of time; `GlyphLayer` keeps one `InstancedMesh` in step with the frame
+clock. The lighting rig (M3-T4) is landed in
+[`src/scene/`](src/scene/environment.ts) — the background, fog band, four lights
+and bloom threshold are derived from the settled cloud's extent, and the
+bloom-honest emissive calibration inverts ACES to solve the quiet/hot radiances
+and the activity→radiance exponent from *display* anchors, so bright reads as hot
+without blowing out. The draw-call budget (M3-T5) is enforced in
+[`src/scene/`](src/scene/budget.ts) — every fixture measures **3** geometry draw
+calls (nodes + arcs + glyphs; the rig draws none) and a run forty times larger
+measures the same, because the batch unit is the layer, not the message. The
+whole scene is mounted (M3-T6) by [`src/scene/`](src/scene/scenePlan.ts) —
+`buildScenePlan` composes every layer from **one** settlement and **one** attribute
+map, aims the camera at the settled cloud with the rig's own framing distance, and
+reports the measured budget it was composed under; `Scene.tsx` is a thin applier,
+and the app boots on the deterministic fan-out fixture (data → layout → render in
+the real app).
+Next: **M4-T1 — timeline scrubber with play/pause/speed/step-to-next-event**.
 
 ## Stack
 

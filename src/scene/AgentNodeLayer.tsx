@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { TraceModel } from '../model/index.ts'
 import { buildNodeScenePlan } from './nodes.ts'
-import type { NodeSceneOptions } from './nodes.ts'
+import type { NodeSceneOptions, NodeScenePlan } from './nodes.ts'
 
 /**
  * Agent nodes as instanced glowing meshes (M3-T1) — the render half.
@@ -52,14 +52,24 @@ import type { NodeSceneOptions } from './nodes.ts'
 export interface AgentNodeLayerProps {
   /** The normalized run to draw (M1-T5). */
   run: TraceModel
-  /** Optional plan overrides (settlement / attributes / style). */
+  /**
+   * A plan already built for this run — from {@link buildScenePlan} (M3-T6), so the
+   * whole scene shares one settlement. Used as-is; when omitted the layer derives
+   * its own plan from `run` (the standalone path).
+   */
+  plan?: NodeScenePlan
+  /** Optional plan overrides (settlement / attributes / style) — ignored when `plan` is given. */
   options?: NodeSceneOptions
 }
 
-export default function AgentNodeLayer({ run, options }: AgentNodeLayerProps) {
+export default function AgentNodeLayer({ run, plan, options }: AgentNodeLayerProps) {
   // Rebuilding the plan is pure and cheap relative to a frame; memoized so a
-  // re-render with the same run/options does not re-settle the layout.
-  const plan = useMemo(() => buildNodeScenePlan(run, options), [run, options])
+  // re-render with the same run/options does not re-settle the layout. A supplied
+  // plan wins, which is how the mounted scene pays for one settlement, not four.
+  const resolved = useMemo(
+    () => plan ?? buildNodeScenePlan(run, options),
+    [plan, run, options],
+  )
   const meshRef = useRef<THREE.InstancedMesh | null>(null)
 
   useEffect(() => {
@@ -69,8 +79,8 @@ export default function AgentNodeLayer({ run, options }: AgentNodeLayerProps) {
     // Matrix4.fromArray reads our column-major tuple with no conversion.
     const matrix = new THREE.Matrix4()
     const color = new THREE.Color()
-    for (let index = 0; index < plan.instances.length; index += 1) {
-      const instance = plan.instances[index]
+    for (let index = 0; index < resolved.instances.length; index += 1) {
+      const instance = resolved.instances[index]
       matrix.fromArray(instance.matrix)
       mesh.setMatrixAt(index, matrix)
       color.setRGB(instance.color[0], instance.color[1], instance.color[2])
@@ -79,17 +89,17 @@ export default function AgentNodeLayer({ run, options }: AgentNodeLayerProps) {
     mesh.instanceMatrix.needsUpdate = true
     if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true
     mesh.computeBoundingSphere()
-  }, [plan])
+  }, [resolved])
 
-  if (plan.count === 0) return null
+  if (resolved.count === 0) return null
 
   return (
     <instancedMesh
       ref={meshRef}
-      args={[undefined, undefined, plan.count]}
+      args={[undefined, undefined, resolved.count]}
       frustumCulled={false}
     >
-      <sphereGeometry args={[1, plan.style.segments, plan.style.segments]} />
+      <sphereGeometry args={[1, resolved.style.segments, resolved.style.segments]} />
       {/* Unlit emitter (M3-T4): the per-instance colour carries the calibrated
           HDR radiance, and tone mapping (the rig sets ACESFilmic) rolls the hot
           end off instead of clipping it. White base so the instance colour is
