@@ -238,3 +238,25 @@ export type { SceneCamera, SceneCounts, SceneOptions, ScenePlan } from './sceneP
 
 export { default as Scene } from './Scene.tsx'
 export type { SceneProps } from './Scene.tsx'
+
+// ── time-based reveal (M4-T1) ───────────────────────────────────────────────
+
+export {
+  ARC_LIVE_FLOOR,
+  DORMANT_ARC_INTENSITY,
+  DORMANT_NODE_GLOW,
+  RevealError,
+  buildRevealTrack,
+  revealAt,
+} from './reveal.ts'
+
+export type {
+  ArcReveal,
+  ArcRevealTrack,
+  GlyphReveal,
+  GlyphRevealTrack,
+  NodeReveal,
+  NodeRevealTrack,
+  RevealTrack,
+  SceneReveal,
+} from './reveal.ts'

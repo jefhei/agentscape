@@ -480,6 +480,12 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       // angles and the target from the settled bounds' centre, so — like the
       // rig — it carries no hand-placed coordinate.
       'src/scene/scenePlan.ts',
+      // The playback transport (M4-T1) chooses *when*, never *where*: it reads
+      // the run's time axis and emits no position at all.
+      'src/playback/playback.ts',
+      // The reveal (M4-T1) scales magnitudes the scene plan already derived —
+      // one glow factor per node, one intensity per arc — and places nothing.
+      'src/scene/reveal.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')

@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import type { TraceModel } from '../model/index.ts'
 import { buildNodeScenePlan } from './nodes.ts'
 import type { NodeSceneOptions, NodeScenePlan } from './nodes.ts'
+import type { SceneReveal } from './reveal.ts'
 
 /**
  * Agent nodes as instanced glowing meshes (M3-T1) — the render half.
@@ -60,9 +61,20 @@ export interface AgentNodeLayerProps {
   plan?: NodeScenePlan
   /** Optional plan overrides (settlement / attributes / style) — ignored when `plan` is given. */
   options?: NodeSceneOptions
+  /**
+   * What the run has revealed as of the current playhead (M4-T1). Each instance's
+   * colour is scaled by its agent's `glow` — dormant until the run touches the
+   * agent, then full. Omitted / `null` draws every node lit (the static scene).
+   */
+  reveal?: SceneReveal | null
 }
 
-export default function AgentNodeLayer({ run, plan, options }: AgentNodeLayerProps) {
+export default function AgentNodeLayer({
+  run,
+  plan,
+  options,
+  reveal,
+}: AgentNodeLayerProps) {
   // Rebuilding the plan is pure and cheap relative to a frame; memoized so a
   // re-render with the same run/options does not re-settle the layout. A supplied
   // plan wins, which is how the mounted scene pays for one settlement, not four.
@@ -83,13 +95,22 @@ export default function AgentNodeLayer({ run, plan, options }: AgentNodeLayerPro
       const instance = resolved.instances[index]
       matrix.fromArray(instance.matrix)
       mesh.setMatrixAt(index, matrix)
-      color.setRGB(instance.color[0], instance.color[1], instance.color[2])
+      // The reveal (M4-T1) scales the calibrated radiance: a dormant agent is
+      // drawn at `DORMANT_NODE_GLOW` of its own colour, an active one at full.
+      // Multiplying a linear RGB glow by a scalar IS scaling its radiance
+      // linearly, which is why no second calibration curve is needed here.
+      const glow = reveal?.nodes[index]?.glow ?? 1
+      color.setRGB(
+        instance.color[0] * glow,
+        instance.color[1] * glow,
+        instance.color[2] * glow,
+      )
       mesh.setColorAt(index, color)
     }
     mesh.instanceMatrix.needsUpdate = true
     if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true
     mesh.computeBoundingSphere()
-  }, [resolved])
+  }, [resolved, reveal])
 
   if (resolved.count === 0) return null
 

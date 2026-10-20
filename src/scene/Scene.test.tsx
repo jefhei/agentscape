@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { buildFixture } from '../fixtures/index.ts'
 import { buildScenePlan } from './scenePlan.ts'
+import { buildRevealTrack, revealAt } from './reveal.ts'
 import Scene from './Scene.tsx'
 
 /**
@@ -21,26 +22,32 @@ const seen = vi.hoisted(() => ({
   glyphsPlan: null as unknown,
   environmentPlan: null as unknown,
   nodeRun: null as unknown,
+  nodesReveal: null as unknown,
+  arcsReveal: null as unknown,
+  glyphsReveal: null as unknown,
 }))
 
 vi.mock('./AgentNodeLayer.tsx', () => ({
-  default: (props: { run?: unknown; plan?: unknown }) => {
+  default: (props: { run?: unknown; plan?: unknown; reveal?: unknown }) => {
     seen.nodesPlan = props.plan
     seen.nodeRun = props.run
+    seen.nodesReveal = props.reveal
     return createElement('div', { 'data-testid': 'layer-nodes' })
   },
 }))
 
 vi.mock('./MessageArcLayer.tsx', () => ({
-  default: (props: { plan?: unknown }) => {
+  default: (props: { plan?: unknown; reveal?: unknown }) => {
     seen.arcsPlan = props.plan
+    seen.arcsReveal = props.reveal
     return createElement('div', { 'data-testid': 'layer-arcs' })
   },
 }))
 
 vi.mock('./GlyphLayer.tsx', () => ({
-  default: (props: { plan?: unknown }) => {
+  default: (props: { plan?: unknown; reveal?: unknown }) => {
     seen.glyphsPlan = props.plan
+    seen.glyphsReveal = props.reveal
     return createElement('div', { 'data-testid': 'layer-glyphs' })
   },
 }))
@@ -99,5 +106,25 @@ describe('Scene — the mounted scene (M3-T6)', () => {
       unmount()
       expect(JSON.stringify(plan.run)).toBe(before)
     }
+  })
+
+  it('hands the one reveal to all three element layers (M4-T1)', () => {
+    const plan = buildScenePlan(RUN)
+    const reveal = revealAt(buildRevealTrack(plan), 0)
+    render(<Scene plan={plan} reveal={reveal} />)
+
+    // Same object for nodes, arcs and glyphs: there is one notion of "now" in
+    // the scene, not one per layer.
+    expect(seen.nodesReveal).toBe(reveal)
+    expect(seen.arcsReveal).toBe(reveal)
+    expect(seen.glyphsReveal).toBe(reveal)
+  })
+
+  it('mounts fully lit when no reveal is given (the static scene)', () => {
+    const plan = buildScenePlan(RUN)
+    render(<Scene plan={plan} />)
+    expect(seen.nodesReveal).toBeUndefined()
+    expect(seen.arcsReveal).toBeUndefined()
+    expect(seen.glyphsReveal).toBeUndefined()
   })
 })

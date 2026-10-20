@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import App, { MOUNTED_RUN } from './App'
 import { DRAW_CALL_CEILING } from './scene/index.ts'
 
@@ -64,5 +64,32 @@ describe('App shell (M1-T1)', () => {
     expect(MOUNTED_RUN.meta.agentCount).toBeGreaterThan(0)
     // ...and the scene composed for it is inside the geometry budget.
     expect(viewport).toHaveAttribute('data-draw-calls', String(DRAW_CALL_CEILING))
+  })
+
+  it('mounts the playback transport over the scene (M4-T1)', () => {
+    render(<App />)
+    const main = screen.getByRole('main')
+    expect(main).toContainElement(screen.getByTestId('transport'))
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+    // The run opens paused at 0, so the scene is at its opening reveal.
+    expect(screen.getByTestId('viewport')).toHaveAttribute('data-playback-elapsed', '0')
+    expect(screen.getByTestId('viewport')).toHaveAttribute('data-reveal-arcs', '1')
+    expect(screen.getByTestId('viewport')).toHaveAttribute('data-reveal-glyphs', '1')
+  })
+
+  it('drives the scene from the transport: stepping reveals the next event (M4-T1)', () => {
+    render(<App />)
+    const viewport = screen.getByTestId('viewport')
+    // A step is a scene action, not a UI decoration: the playhead moves, and the
+    // viewport reports the reveal it was handed at that instant. (Stepping never
+    // starts the clock, so this stays deterministic in jsdom.)
+    fireEvent.click(screen.getByRole('button', { name: 'Next event' }))
+    expect(viewport).toHaveAttribute('data-playback-elapsed', '60000')
+    // A second link now has traffic, and a second glyph has fired.
+    expect(viewport).toHaveAttribute('data-reveal-arcs', '2')
+    expect(viewport).toHaveAttribute('data-reveal-glyphs', '2')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Previous event' }))
+    expect(viewport).toHaveAttribute('data-playback-elapsed', '0')
   })
 })

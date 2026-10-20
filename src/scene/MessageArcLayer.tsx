@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import type { TraceModel } from '../model/index.ts'
 import { ARC_ATTRIBUTE_NAMES, ARC_ATTRIBUTE_SIZES, buildArcScenePlan } from './arcs.ts'
 import type { ArcSceneOptions, ArcScenePlan } from './arcs.ts'
+import type { SceneReveal } from './reveal.ts'
 import {
   ARC_FRAGMENT_SHADER,
   ARC_VERTEX_SHADER,
@@ -65,6 +66,13 @@ export interface MessageArcLayerProps {
   plan?: ArcScenePlan
   /** Optional plan overrides (settlement / attributes / style / reuse) — ignored when `plan` is given. */
   options?: ArcSceneOptions
+  /**
+   * What the run has revealed as of the current playhead (M4-T1). Each arc's
+   * per-vertex `aIntensity` is multiplied by its channel's `intensity` — faint
+   * before traffic, ramping to full as the link's messages fire. Omitted / `null`
+   * draws every arc at its plan intensity (the static scene).
+   */
+  reveal?: SceneReveal | null
 }
 
 /**
@@ -86,7 +94,12 @@ function buildArcGeometry(plan: ArcScenePlan): THREE.BufferGeometry {
   return geometry
 }
 
-export default function MessageArcLayer({ run, plan, options }: MessageArcLayerProps) {
+export default function MessageArcLayer({
+  run,
+  plan,
+  options,
+  reveal,
+}: MessageArcLayerProps) {
   // Rebuilding the plan is pure; memoized so a re-render with the same
   // run/options does not re-settle the layout. A supplied plan wins, which is how
   // the mounted scene pays for one settlement, not four.
@@ -108,6 +121,38 @@ export default function MessageArcLayer({ run, plan, options }: MessageArcLayerP
     if (geometry === null) return undefined
     return () => geometry.dispose()
   }, [geometry])
+
+  // The plan's own per-vertex intensities — the static baseline the reveal
+  // scales. A typed copy so the geometry attribute can be rewritten in place
+  // every frame without ever touching the plan.
+  const baseIntensity = useMemo(
+    () =>
+      resolved.count === 0 ? null : Float32Array.from(resolved.buffers.aIntensity),
+    [resolved],
+  )
+
+  // Apply the reveal (M4-T1): every vertex of an arc scales with its channel's
+  // lit factor. The channel *is* the link, whose vertex range the plan records,
+  // so no per-arc bookkeeping is needed here — one pass, one upload.
+  useEffect(() => {
+    if (geometry === null || baseIntensity === null) return
+    const attribute = geometry.getAttribute(
+      'aIntensity',
+    ) as unknown as THREE.BufferAttribute
+    const array = attribute.array as Float32Array
+    array.set(baseIntensity)
+    if (reveal !== null && reveal !== undefined) {
+      for (let index = 0; index < resolved.arcs.length; index += 1) {
+        const arc = resolved.arcs[index]
+        const intensity = reveal.arcs[index]?.intensity ?? 1
+        const end = arc.vertexStart + arc.vertexCount
+        for (let vertex = arc.vertexStart; vertex < end; vertex += 1) {
+          array[vertex] = baseIntensity[vertex] * intensity
+        }
+      }
+    }
+    attribute.needsUpdate = true
+  }, [geometry, baseIntensity, reveal, resolved])
 
   const uniforms = useMemo(() => buildArcUniforms(resolved.style), [resolved.style])
 

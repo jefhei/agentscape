@@ -1,11 +1,13 @@
 import { useLayoutEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
 import { Canvas, useThree } from '@react-three/fiber'
+import type { TimelineFrame } from './timeline/index.ts'
 import type { TraceModel } from './model/index.ts'
 import Scene from './scene/Scene.tsx'
 import EnvironmentRig from './scene/EnvironmentRig.tsx'
 import { buildEnvironmentPlan } from './scene/environment.ts'
 import type { EnvironmentPlan } from './scene/environment.ts'
+import { buildRevealTrack, revealAt } from './scene/reveal.ts'
 import { buildScenePlan, sceneCamera } from './scene/scenePlan.ts'
 import type { SceneCamera } from './scene/scenePlan.ts'
 
@@ -69,15 +71,35 @@ function CameraRig({ camera }: { camera: SceneCamera }) {
 export interface ViewportProps {
   /** The normalized run to render; omit for an empty scene. */
   run?: TraceModel
+  /**
+   * The playback frame to reveal the scene at (M4-T1). Omit to draw the run fully
+   * lit — the static scene a mount gets before a transport exists. The frame's
+   * `elapsedMs` alone is what the scene needs; the rest is the transport's.
+   */
+  frame?: TimelineFrame
 }
 
-export default function Viewport({ run }: ViewportProps) {
+export default function Viewport({ run, frame }: ViewportProps) {
   const [ready, setReady] = useState(false)
 
   // One scene pass for the whole run, memoized on the run alone: every plan below
   // (and the camera) is derived from it. Pure and deterministic, so re-rendering
   // with the same run rebuilds nothing.
   const scene = useMemo(() => (run === undefined ? null : buildScenePlan(run)), [run])
+
+  // The reveal is indexed once per scene (the O(n) half of M4-T1's reveal) and
+  // then looked up per frame — so scrubbing at 60 fps never re-scans the trace.
+  const revealTrack = useMemo(
+    () => (scene === null ? null : buildRevealTrack(scene)),
+    [scene],
+  )
+  const reveal = useMemo(
+    () =>
+      revealTrack === null || frame === undefined
+        ? null
+        : revealAt(revealTrack, frame.elapsedMs),
+    [revealTrack, frame],
+  )
 
   // The empty scene still needs a rig — and a camera — so its frame matches what a
   // loaded run would be framed with. Both fall back to the rig's own defaults.
@@ -96,6 +118,9 @@ export default function Viewport({ run }: ViewportProps) {
       data-testid="viewport"
       data-run-id={scene?.runId}
       data-draw-calls={scene?.drawCalls}
+      data-playback-elapsed={reveal === null ? undefined : Math.round(reveal.elapsedMs)}
+      data-reveal-arcs={reveal?.counts.firedArcs}
+      data-reveal-glyphs={reveal?.counts.visibleGlyphs}
     >
       <Canvas
         camera={{
@@ -115,7 +140,7 @@ export default function Viewport({ run }: ViewportProps) {
       >
         <CameraRig camera={camera} />
         {scene !== null ? (
-          <Scene plan={scene} />
+          <Scene plan={scene} reveal={reveal} />
         ) : (
           <EnvironmentRig plan={environment} />
         )}

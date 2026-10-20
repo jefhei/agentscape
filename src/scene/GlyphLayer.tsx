@@ -4,6 +4,27 @@ import * as THREE from 'three'
 import type { TraceModel } from '../model/index.ts'
 import { buildGlyphScenePlan, writeGlyphMatrices } from './glyphs.ts'
 import type { GlyphSceneOptions, GlyphScenePlan } from './glyphs.ts'
+import type { SceneReveal } from './reveal.ts'
+
+/**
+ * Hide the glyphs the reveal says have not fired yet (M4-T1).
+ *
+ * Hiding is mechanical, not a decision: a zero-scale instance matrix draws
+ * nothing, so an unrevealed glyph costs no geometry change and no shader. The
+ * *visibility rule* is `src/scene/reveal.ts`'s (one glyph per tool call, visible
+ * once the call has fired); this only applies it to the instance buffer.
+ */
+function hideInvisibleGlyphs(
+  buffer: Float32Array,
+  glyphCount: number,
+  reveal: SceneReveal | null | undefined,
+): void {
+  if (reveal === null || reveal === undefined) return
+  for (let index = 0; index < glyphCount; index += 1) {
+    if (reveal.glyphs[index]?.visible !== false) continue
+    buffer.fill(0, index * 16, index * 16 + 16)
+  }
+}
 
 /**
  * Tool-call glyphs orbiting their calling agent node (M3-T3) — the render half.
@@ -65,9 +86,15 @@ export interface GlyphLayerProps {
   plan?: GlyphScenePlan
   /** Optional plan overrides (settlement / attributes / style / reuse) — ignored when `plan` is given. */
   options?: GlyphSceneOptions
+  /**
+   * What the run has revealed as of the current playhead (M4-T1). A glyph whose
+   * tool call has not fired yet is hidden (drawn as a zero-scale instance), so
+   * the glyph population grows with the run. Omitted / `null` draws them all.
+   */
+  reveal?: SceneReveal | null
 }
 
-export default function GlyphLayer({ run, plan, options }: GlyphLayerProps) {
+export default function GlyphLayer({ run, plan, options, reveal }: GlyphLayerProps) {
   // Rebuilding the plan is pure and cheap relative to a frame; memoized so a
   // re-render with the same run/options does not re-settle the layout. A supplied
   // plan wins, which is how the mounted scene pays for one settlement, not four.
@@ -99,9 +126,10 @@ export default function GlyphLayer({ run, plan, options }: GlyphLayerProps) {
     if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true
     const buffer = mesh.instanceMatrix.array as Float32Array
     writeGlyphMatrices(resolved.glyphs, 0, buffer)
+    hideInvisibleGlyphs(buffer, resolved.glyphs.length, reveal)
     mesh.instanceMatrix.needsUpdate = true
     mesh.computeBoundingSphere()
-  }, [resolved])
+  }, [resolved, reveal])
 
   // The one tick the render layer owns: advance the orbits. The rule it feeds
   // (./glyphs.ts `glyphMatrixAt`) is pure and unit-tested. Called
@@ -111,6 +139,7 @@ export default function GlyphLayer({ run, plan, options }: GlyphLayerProps) {
     if (mesh === null) return
     const buffer = mesh.instanceMatrix.array as Float32Array
     writeGlyphMatrices(resolved.glyphs, state.clock.elapsedTime * 1000, buffer)
+    hideInvisibleGlyphs(buffer, resolved.glyphs.length, reveal)
     mesh.instanceMatrix.needsUpdate = true
   })
 

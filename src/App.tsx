@@ -1,6 +1,8 @@
 import './App.css'
 import { buildFixture } from './fixtures/index.ts'
 import type { FixtureShape } from './fixtures/index.ts'
+import { usePlayback } from './playback/index.ts'
+import TransportBar from './ui/TransportBar.tsx'
 import Viewport from './Viewport'
 
 /**
@@ -21,13 +23,22 @@ const DEFAULT_FIXTURE: FixtureShape = 'fan-out'
 export const MOUNTED_RUN = buildFixture(DEFAULT_FIXTURE).run
 
 /**
- * AgentScape app shell (M1-T1): header + 3D viewport.
+ * AgentScape app shell (M1-T1): header + 3D viewport + playback transport.
  *
  * The header carries the project name and its one-line thesis. The main area is
  * the R3F viewport, which since M3-T6 mounts a real trace: a deterministic fixture
  * run, laid out, lit and drawn (nodes, arcs, glyphs, bloom) by the scene layer.
+ *
+ * Since M4-T1 the shell also owns the **transport**: `usePlayback` holds the
+ * playhead, the clock and the key bindings, the {@link TransportBar} overlays the
+ * viewport, and the frame it produces is handed to the viewport, which reveals the
+ * scene at that instant (`src/scene/reveal.ts`). The three pieces stay separate on
+ * purpose — the transport decides *when*, the reveal decides *how lit*, the scene
+ * decides *where*. None of them re-derives another's answer.
  */
 export default function App() {
+  const playback = usePlayback(MOUNTED_RUN)
+
   return (
     <div className="app">
       <header className="app-header">
@@ -37,7 +48,12 @@ export default function App() {
         </p>
       </header>
       <main className="app-main">
-        <Viewport run={MOUNTED_RUN} />
+        <Viewport run={MOUNTED_RUN} frame={playback.frame} />
+        <TransportBar
+          state={playback.state}
+          scrubber={playback.scrubber}
+          onAction={playback.dispatch}
+        />
       </main>
     </div>
   )
