@@ -60,8 +60,8 @@
  * Deliberately NOT here: the mounting itself (`Scene.tsx` is the thin consumer),
  * the app-level run choice (`App.tsx` mounts a fixture; choosing a real export is
  * M5-T3's dogfood and a loader/picker is post-M4), and the camera *controls* —
- * orbit and fly modes are M4-T2/T3 and will consume this camera as their starting
- * frame.
+ * the orbit mode (M4-T2) consumes this camera as its starting frame via
+ * `src/camera/`, and the fly mode (M4-T3) will consume the orbit mode's output.
  */
 
 import type { TraceModel } from '../model/index.ts'
@@ -196,8 +196,12 @@ export type SceneOptions = SceneBudgetOptions
 
 // ── Camera ──────────────────────────────────────────────────────────────────
 
-/** A unit direction from spherical angles: azimuth around +Y, elevation above the plane. */
-function viewDirection(azimuthDeg: number, elevationDeg: number): Vec3 {
+/**
+ * A unit direction from spherical angles: azimuth around +Y, elevation above the
+ * plane. Shared with the orbit camera (M4-T2), which expresses its eye direction
+ * the same way — one spherical→cartesian rule in the codebase, not two.
+ */
+export function directionFromAngles(azimuthDeg: number, elevationDeg: number): Vec3 {
   const azimuth = (azimuthDeg * Math.PI) / 180
   const elevation = (elevationDeg * Math.PI) / 180
   const horizontal = Math.cos(elevation)
@@ -206,6 +210,19 @@ function viewDirection(azimuthDeg: number, elevationDeg: number): Vec3 {
     y: Math.sin(elevation),
     z: horizontal * Math.sin(azimuth),
   }
+}
+
+/**
+ * Far clip plane for a camera `distance` from a cloud of `extentRadius`:
+ * {@link CAMERA_FAR_MARGIN} radii past the camera at minimum, so the far edge of
+ * the cloud is never clipped. Shared with the orbit camera (M4-T2), which
+ * re-derives it as the viewer dollies in and out — a fixed `far` would clip the
+ * cloud the moment you zoomed out past the framing distance.
+ */
+export function cameraFar(distance: number, extentRadius: number): number {
+  const radius = Number.isFinite(extentRadius) && extentRadius > 0 ? extentRadius : 0
+  const near = Number.isFinite(distance) ? distance : 0
+  return Math.max(near + radius * CAMERA_FAR_MARGIN, CAMERA_NEAR * 2)
 }
 
 /** The origin, as a named all-zero sentinel (an empty scene's look-at point). */
@@ -235,7 +252,7 @@ export function sceneCamera(
       ? { x: ORIGIN.x, y: ORIGIN.y, z: ORIGIN.z }
       : { x: bounds.center.x, y: bounds.center.y, z: bounds.center.z }
   const distance = environment.viewDistance
-  const direction = viewDirection(CAMERA_AZIMUTH_DEG, CAMERA_ELEVATION_DEG)
+  const direction = directionFromAngles(CAMERA_AZIMUTH_DEG, CAMERA_ELEVATION_DEG)
   const extentRadius =
     Number.isFinite(environment.extentRadius) && environment.extentRadius > 0
       ? environment.extentRadius
@@ -250,7 +267,7 @@ export function sceneCamera(
     target,
     fov: environment.fov,
     near: CAMERA_NEAR,
-    far: Math.max(distance + extentRadius * CAMERA_FAR_MARGIN, CAMERA_NEAR * 2),
+    far: cameraFar(distance, extentRadius),
     distance,
   }
 }

@@ -1,6 +1,6 @@
-import { useLayoutEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import * as THREE from 'three'
-import { Canvas, useThree } from '@react-three/fiber'
+import { Canvas } from '@react-three/fiber'
 import type { TimelineFrame } from './timeline/index.ts'
 import type { TraceModel } from './model/index.ts'
 import Scene from './scene/Scene.tsx'
@@ -9,7 +9,8 @@ import { buildEnvironmentPlan } from './scene/environment.ts'
 import type { EnvironmentPlan } from './scene/environment.ts'
 import { buildRevealTrack, revealAt } from './scene/reveal.ts'
 import { buildScenePlan, sceneCamera } from './scene/scenePlan.ts'
-import type { SceneCamera } from './scene/scenePlan.ts'
+import { OrbitCameraRig, useOrbitCamera } from './camera/index.ts'
+import CameraBar from './ui/CameraBar.tsx'
 
 /** The rig's tone-mapping name (M3-T4) → the three.js constant that applies it. */
 const TONE_MAPPING: Record<EnvironmentPlan['toneMapping'], THREE.ToneMapping> = {
@@ -17,32 +18,8 @@ const TONE_MAPPING: Record<EnvironmentPlan['toneMapping'], THREE.ToneMapping> = 
 }
 
 /**
- * Applies the scene's camera plan to the renderer's camera.
- *
- * The camera *numbers* — position, look-at target, fov, near, far — are decided by
- * the pure layer (`sceneCamera`, M3-T6), which frames the settled cloud's centre
- * with the rig's own framing distance and field of view. This component is the
- * only place that touches the `PerspectiveCamera`, which is exactly the kind of
- * thing the data layer cannot do. R3F creates its default camera looking at the
- * origin; without this, a cloud that settled off-centre would render off-centre.
- */
-function CameraRig({ camera }: { camera: SceneCamera }) {
-  const three = useThree((state) => state.camera)
-  useLayoutEffect(() => {
-    three.position.set(camera.position.x, camera.position.y, camera.position.z)
-    three.lookAt(camera.target.x, camera.target.y, camera.target.z)
-    if (three instanceof THREE.PerspectiveCamera) {
-      three.fov = camera.fov
-      three.near = camera.near
-      three.far = camera.far
-      three.updateProjectionMatrix()
-    }
-  }, [three, camera])
-  return null
-}
-
-/**
- * The AgentScape viewport (M1-T1, mounted scene since M3-T6).
+ * The AgentScape viewport (M1-T1, mounted scene since M3-T6, orbit camera since
+ * M4-T2).
  *
  * A thin render-layer shell around the React Three Fiber `<Canvas>`. With no
  * `run` it is the empty scene M1-T1 landed: the rig's background, fog and lights,
@@ -55,15 +32,21 @@ function CameraRig({ camera }: { camera: SceneCamera }) {
  * same layout object and attribute map, not from four independent derivations, and
  * the camera, the fog band and the framing distance all come from the same plan.
  *
- * The shell owns two things the scene graph cannot: the renderer's tone mapping /
- * exposure (read from the rig plan, so the emissive calibration and the renderer
- * cannot disagree) and the camera plan application ({@link CameraRig}). Everything
- * else — what to draw and where — was decided in `src/scene/`.
+ * The shell owns three things the scene graph cannot: the renderer's tone mapping
+ * / exposure (read from the rig plan, so the emissive calibration and the renderer
+ * cannot disagree), the **camera controls** (since M4-T2 — {@link useOrbitCamera}
+ * holds the orbit state, {@link OrbitCameraRig} applies the pose and measures the
+ * pointer, {@link CameraBar} is the accessible control surface) and the playback
+ * reveal handed down by the app shell (M4-T1). Everything else — what to draw and
+ * where — was decided in `src/scene/`; how the camera frames it was decided in
+ * `src/scene/scenePlan.ts` (the opening shot) and `src/camera/orbit.ts` (the
+ * orbit rule).
  *
  * The `data-*` attributes on the wrapper are not UI: they are how a headless test
- * asserts that a run really reached the renderer (jsdom has no GPU, so a mounted
- * scene cannot be inspected any other way). They are the run id and the measured
- * draw-call total of the scene that was composed.
+ * asserts that a run really reached the renderer and that the camera really
+ * moved (jsdom has no GPU, so a mounted scene cannot be inspected any other way).
+ * They are the run id, the measured draw-call total of the scene that was
+ * composed, the reveal at the playhead, and the camera mode/angles/distance.
  *
  * `ready` flips once `onCreated` fires, which is the only honest signal that
  * separates "renderer created and rendering" from "blank canvas".
@@ -107,10 +90,16 @@ export default function Viewport({ run, frame }: ViewportProps) {
     () => scene?.environment ?? buildEnvironmentPlan(),
     [scene],
   )
-  const camera = useMemo(
+  const openingCamera = useMemo(
     () => scene?.camera ?? sceneCamera(environment, null),
     [scene, environment],
   )
+
+  // The opening shot is the scene plan's (M3-T6); the orbit state is this
+  // viewport's, since only it can bind the pointer to the canvas element. The
+  // orbit resets when the framing camera changes, i.e. when a different run loads.
+  const orbit = useOrbitCamera(openingCamera, environment.extentRadius)
+  const camera = orbit.camera
 
   return (
     <div
@@ -121,6 +110,10 @@ export default function Viewport({ run, frame }: ViewportProps) {
       data-playback-elapsed={reveal === null ? undefined : Math.round(reveal.elapsedMs)}
       data-reveal-arcs={reveal?.counts.firedArcs}
       data-reveal-glyphs={reveal?.counts.visibleGlyphs}
+      data-camera-mode={orbit.mode}
+      data-camera-azimuth={Math.round(orbit.orbit.azimuthDeg)}
+      data-camera-elevation={Math.round(orbit.orbit.elevationDeg)}
+      data-camera-distance={camera.distance.toFixed(3)}
     >
       <Canvas
         camera={{
@@ -138,7 +131,7 @@ export default function Viewport({ run, frame }: ViewportProps) {
         }}
         onCreated={() => setReady(true)}
       >
-        <CameraRig camera={camera} />
+        <OrbitCameraRig camera={camera} onOrbit={orbit.orbitBy} onZoom={orbit.zoomBy} />
         {scene !== null ? (
           <Scene plan={scene} reveal={reveal} />
         ) : (
@@ -150,6 +143,14 @@ export default function Viewport({ run, frame }: ViewportProps) {
           viewport ready
         </span>
       )}
+      <CameraBar
+        mode={orbit.mode}
+        orbit={orbit.orbit}
+        onZoom={orbit.zoomBy}
+        onReset={orbit.reset}
+        canZoomIn={orbit.canZoomIn}
+        canZoomOut={orbit.canZoomOut}
+      />
     </div>
   )
 }

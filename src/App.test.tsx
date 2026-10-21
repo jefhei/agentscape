@@ -92,4 +92,34 @@ describe('App shell (M1-T1)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Previous event' }))
     expect(viewport).toHaveAttribute('data-playback-elapsed', '0')
   })
+
+  it('mounts the orbit camera over the scene and reports its state (M4-T2)', () => {
+    render(<App />)
+    const viewport = screen.getByTestId('viewport')
+    expect(screen.getByTestId('camera-bar')).toBeInTheDocument()
+    expect(screen.getByTestId('camera-mode')).toHaveTextContent('Orbit')
+    // The viewport reports the camera it is driving the renderer with, derived
+    // from the scene plan's own opening shot.
+    expect(viewport).toHaveAttribute('data-camera-mode', 'orbit')
+    expect(viewport).toHaveAttribute('data-camera-azimuth', '90')
+    expect(viewport).toHaveAttribute('data-camera-elevation', '18')
+    expect(viewport).toHaveAttribute('data-camera-distance', '12.000')
+  })
+
+  it('dollies the camera from the camera bar (M4-T2)', () => {
+    render(<App />)
+    const viewport = screen.getByTestId('viewport')
+    // One dolly step closer at the orbit model's own step size: the camera bar
+    // dispatches a transition, the hook holds it, and the viewport reports the
+    // resulting framing — the whole camera path, headlessly.
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
+    expect(viewport).toHaveAttribute('data-camera-distance', (12 / 1.15).toFixed(3))
+    expect(screen.getByTestId('camera-zoom')).toHaveTextContent('1.15×')
+    // ...and azimuth is untouched by a dolly.
+    expect(viewport).toHaveAttribute('data-camera-azimuth', '90')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset view' }))
+    expect(viewport).toHaveAttribute('data-camera-distance', '12.000')
+    expect(screen.getByTestId('camera-zoom')).toHaveTextContent('1.00×')
+  })
 })

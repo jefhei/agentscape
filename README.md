@@ -101,8 +101,27 @@ whole scene is mounted (M3-T6) by [`src/scene/`](src/scene/scenePlan.ts) —
 map, aims the camera at the settled cloud with the rig's own framing distance, and
 reports the measured budget it was composed under; `Scene.tsx` is a thin applier,
 and the app boots on the deterministic fan-out fixture (data → layout → render in
-the real app).
-Next: **M4-T1 — timeline scrubber with play/pause/speed/step-to-next-event**.
+the real app). The playback transport (M4-T1) is landed in
+[`src/playback/`](src/playback/playback.ts) — one pure reducer over
+`{ timeline, playhead }` (play/pause, speed ladder, scrub, step-to-next-event,
+restart) plus the scrubber's thinned marks and event-density histogram and the
+keyboard map, with the `requestAnimationFrame` clock and the key listener in
+`usePlayback`; the frame it produces feeds
+[`src/scene/reveal.ts`](src/scene/reveal.ts), so scrubbing lights the **spatial
+scene** in run order (structure persists, activity is revealed) rather than
+opening a transcript. The orbit camera (M4-T2) is landed in
+[`src/camera/`](src/camera/orbit.ts) — `createOrbitCamera` reads the scene plan's
+opening shot as an orbit (it reproduces that shot exactly), `orbitBy` /
+`zoomBy` / `resetOrbit` are pure clamped transitions over
+`{ target, azimuth, elevation, zoom }`, the eye is always derived as
+`target + direction · distance` (so the pose cannot leave the orbit sphere), the
+dolly range is a multiple of the scene's own framing distance, and the far plane
+is re-derived at every distance so zooming out never clips the cloud. Drag
+(primary button, grab-the-cloud) and wheel (line/page deltas normalized, capped
+per event) are measured by `OrbitCameraRig` and mapped by the pure module;
+`CameraBar` is the accessible control surface (zoom in/out, reset) and the
+readout.
+Next: **M4-T3 — fly camera mode (move inside the run)**.
 
 ## Stack
 

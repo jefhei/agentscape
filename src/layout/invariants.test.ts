@@ -486,6 +486,10 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       // The reveal (M4-T1) scales magnitudes the scene plan already derived —
       // one glow factor per node, one intensity per arc — and places nothing.
       'src/scene/reveal.ts',
+      // The camera layer (M4-T2): the orbit model's eye position is the settled
+      // target plus a spherical direction times the dolly distance — it authors
+      // no coordinate of its own, and it is pure data (no three.js, no DOM).
+      'src/camera/orbit.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')

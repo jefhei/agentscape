@@ -247,3 +247,87 @@ body {
   font-variant-numeric: tabular-nums;
   color: #8fc3ff;
 }
+
+/* ── Camera bar (M4-T2) ─────────────────────────────────────────────────────
+   Top-LEFT overlay: the transport owns the bottom edge and the boot chip the
+   top-right, so the three never collide. Like the transport it floats over the
+   scene rather than taking height from it — the canvas is the product. */
+.camera-bar {
+  position: absolute;
+  left: 0.9rem;
+  top: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #1b2130;
+  border-radius: 0.55rem;
+  background: rgb(11 13 18 / 88%);
+  backdrop-filter: blur(6px);
+  font-size: 0.7rem;
+  color: #9aa6bd;
+  user-select: none;
+}
+
+.camera-mode {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid #232b3d;
+  border-radius: 999px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8fc3ff;
+}
+
+.camera-readout {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: #7d8aa3;
+}
+
+.camera-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.camera-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.25rem;
+  border: 1px solid #232b3d;
+  border-radius: 0.35rem;
+  background: #11151e;
+  color: #c8d2e4;
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.camera-button:hover:not(:disabled) {
+  border-color: #33405c;
+  color: #ffffff;
+}
+
+.camera-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.camera-zoom {
+  min-width: 2.1rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: #8fc3ff;
+}
+
+/* The canvas is a camera surface: grab to orbit, grabbing while dragging. */
+.viewport canvas {
+  cursor: grab;
+}
+
+.viewport canvas.is-orbiting {
+  cursor: grabbing;
+}
