@@ -48,10 +48,10 @@
  *
  * ## Scope
  *
- * One mode only: **orbit**. M4-T3 adds the fly camera and the mode switch, and
- * deliberately does not land here as a stub — an unimplemented `'fly'` in the
- * union would be a mode the UI could select and nothing could honour. The
- * camera *lookups* the detail panel needs (M4-T4) are not here either.
+ * One mode: **orbit**. The fly camera and the mode switch landed in M4-T3
+ * (`./fly.ts` + `./modes.ts` + `./cameraState.ts`); this module still owns only
+ * the outside view, and the *lookups* the detail panel needs (M4-T4) are not here
+ * either.
  */
 
 import type { Vec3 } from '../layout/index.ts'
@@ -63,17 +63,7 @@ import {
   directionFromAngles,
 } from '../scene/scenePlan.ts'
 import type { SceneCamera } from '../scene/scenePlan.ts'
-
-// ── Modes ───────────────────────────────────────────────────────────────────
-
-/**
- * The camera modes this build has. A one-member union on purpose: M4-T3 widens
- * it to `'orbit' | 'fly'` and adds the switch — see the module doc.
- */
-export type CameraMode = 'orbit'
-
-/** Human-readable mode name, for the camera bar. */
-export const CAMERA_MODE_LABELS: Record<CameraMode, string> = { orbit: 'Orbit' }
+import { CAMERA_MODE_LABELS } from './modes.ts'
 
 // ── Tunables ────────────────────────────────────────────────────────────────
 
@@ -172,7 +162,8 @@ export interface OrbitOptions {
 
 /** What the camera bar prints — the same derivation the controls act on. */
 export interface OrbitReadout {
-  mode: CameraMode
+  /** Literal, so an `OrbitReadout` is one arm of a discriminated union (M4-T3). */
+  mode: 'orbit'
   modeLabel: string
   /** Normalized azimuth, rounded: `'90°'`. */
   azimuthLabel: string

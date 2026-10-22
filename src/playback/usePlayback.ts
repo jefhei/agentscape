@@ -27,6 +27,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { TraceModel } from '../model/index.ts'
 import type { TimelineFrame } from '../timeline/index.ts'
+import { isTypingTarget } from '../ui/keyboard.ts'
 import {
   actionForKey,
   buildScrubber,
@@ -46,19 +47,6 @@ export interface PlaybackController {
   scrubber: Scrubber
   /** Apply one transport action. Stable identity, safe in effect deps. */
   dispatch: (action: PlaybackAction) => void
-}
-
-/**
- * Whether a key event's target is somewhere typing should win: an input, a
- * textarea, a select or a contenteditable. A transport shortcut must never eat
- * a space in a text field, and the scrubber is an `<input>` that already handles
- * its own arrow keys.
- */
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false
-  const tag = target.tagName
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
-  return target.isContentEditable
 }
 
 /**

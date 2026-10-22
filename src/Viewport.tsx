@@ -9,7 +9,7 @@ import { buildEnvironmentPlan } from './scene/environment.ts'
 import type { EnvironmentPlan } from './scene/environment.ts'
 import { buildRevealTrack, revealAt } from './scene/reveal.ts'
 import { buildScenePlan, sceneCamera } from './scene/scenePlan.ts'
-import { OrbitCameraRig, useOrbitCamera } from './camera/index.ts'
+import { FlyCameraRig, OrbitCameraRig, useCamera } from './camera/index.ts'
 import CameraBar from './ui/CameraBar.tsx'
 
 /** The rig's tone-mapping name (M3-T4) → the three.js constant that applies it. */
@@ -18,8 +18,8 @@ const TONE_MAPPING: Record<EnvironmentPlan['toneMapping'], THREE.ToneMapping> = 
 }
 
 /**
- * The AgentScape viewport (M1-T1, mounted scene since M3-T6, orbit camera since
- * M4-T2).
+ * The AgentScape viewport (M1-T1, mounted scene since M3-T6, two camera modes
+ * since M4-T3).
  *
  * A thin render-layer shell around the React Three Fiber `<Canvas>`. With no
  * `run` it is the empty scene M1-T1 landed: the rig's background, fog and lights,
@@ -32,21 +32,28 @@ const TONE_MAPPING: Record<EnvironmentPlan['toneMapping'], THREE.ToneMapping> = 
  * same layout object and attribute map, not from four independent derivations, and
  * the camera, the fog band and the framing distance all come from the same plan.
  *
- * The shell owns three things the scene graph cannot: the renderer's tone mapping
+ * The shell owns four things the scene graph cannot: the renderer's tone mapping
  * / exposure (read from the rig plan, so the emissive calibration and the renderer
- * cannot disagree), the **camera controls** (since M4-T2 — {@link useOrbitCamera}
- * holds the orbit state, {@link OrbitCameraRig} applies the pose and measures the
- * pointer, {@link CameraBar} is the accessible control surface) and the playback
- * reveal handed down by the app shell (M4-T1). Everything else — what to draw and
- * where — was decided in `src/scene/`; how the camera frames it was decided in
- * `src/scene/scenePlan.ts` (the opening shot) and `src/camera/orbit.ts` (the
- * orbit rule).
+ * cannot disagree), the **camera** (since M4-T2 orbit, since M4-T3 orbit *or* fly:
+ * {@link useCamera} holds both states and the active mode, the mode's rig applies
+ * the pose and measures that mode's input, {@link CameraBar} is the accessible
+ * control surface and the switch) and the playback reveal handed down by the app
+ * shell (M4-T1). Everything else — what to draw and where — was decided in
+ * `src/scene/`; how the camera frames it was decided in `src/scene/scenePlan.ts`
+ * (the opening shot) and `src/camera/` (the two pose rules).
+ *
+ * Exactly one camera rig is mounted at a time. They are not merged into one
+ * "smart" rig because their gestures genuinely differ (drag-to-orbit vs
+ * drag-to-look, wheel-dolly vs wheel-advance, and only fly needs a held-key frame
+ * loop): one component with a mode branch inside would be two components pretending
+ * to be one.
  *
  * The `data-*` attributes on the wrapper are not UI: they are how a headless test
  * asserts that a run really reached the renderer and that the camera really
  * moved (jsdom has no GPU, so a mounted scene cannot be inspected any other way).
  * They are the run id, the measured draw-call total of the scene that was
- * composed, the reveal at the playhead, and the camera mode/angles/distance.
+ * composed, the reveal at the playhead, and the camera mode / angles / distance /
+ * eye.
  *
  * `ready` flips once `onCreated` fires, which is the only honest signal that
  * separates "renderer created and rendering" from "blank canvas".
@@ -95,11 +102,11 @@ export default function Viewport({ run, frame }: ViewportProps) {
     [scene, environment],
   )
 
-  // The opening shot is the scene plan's (M3-T6); the orbit state is this
-  // viewport's, since only it can bind the pointer to the canvas element. The
-  // orbit resets when the framing camera changes, i.e. when a different run loads.
-  const orbit = useOrbitCamera(openingCamera, environment.extentRadius)
-  const camera = orbit.camera
+  // The opening shot is the scene plan's (M3-T6); the camera state is this
+  // viewport's, since only it can bind the pointer and the keys to the canvas. Both
+  // modes reset when the framing camera changes, i.e. when a different run loads.
+  const camera = useCamera(openingCamera, environment.extentRadius)
+  const pose = camera.camera
 
   return (
     <div
@@ -110,17 +117,22 @@ export default function Viewport({ run, frame }: ViewportProps) {
       data-playback-elapsed={reveal === null ? undefined : Math.round(reveal.elapsedMs)}
       data-reveal-arcs={reveal?.counts.firedArcs}
       data-reveal-glyphs={reveal?.counts.visibleGlyphs}
-      data-camera-mode={orbit.mode}
-      data-camera-azimuth={Math.round(orbit.orbit.azimuthDeg)}
-      data-camera-elevation={Math.round(orbit.orbit.elevationDeg)}
-      data-camera-distance={camera.distance.toFixed(3)}
+      data-camera-mode={camera.mode}
+      data-camera-azimuth={Math.round(camera.angles.azimuthDeg)}
+      data-camera-elevation={Math.round(camera.angles.elevationDeg)}
+      data-camera-distance={pose.distance.toFixed(3)}
+      data-camera-position={[
+        pose.position.x.toFixed(2),
+        pose.position.y.toFixed(2),
+        pose.position.z.toFixed(2),
+      ].join(',')}
     >
       <Canvas
         camera={{
-          fov: camera.fov,
-          near: camera.near,
-          far: camera.far,
-          position: [camera.position.x, camera.position.y, camera.position.z],
+          fov: pose.fov,
+          near: pose.near,
+          far: pose.far,
+          position: [pose.position.x, pose.position.y, pose.position.z],
         }}
         gl={{
           antialias: true,
@@ -131,7 +143,20 @@ export default function Viewport({ run, frame }: ViewportProps) {
         }}
         onCreated={() => setReady(true)}
       >
-        <OrbitCameraRig camera={camera} onOrbit={orbit.orbitBy} onZoom={orbit.zoomBy} />
+        {camera.mode === 'fly' ? (
+          <FlyCameraRig
+            camera={pose}
+            onLook={camera.lookBy}
+            onAdvance={camera.advance}
+            onMove={camera.move}
+          />
+        ) : (
+          <OrbitCameraRig
+            camera={pose}
+            onOrbit={camera.orbitBy}
+            onZoom={camera.zoomBy}
+          />
+        )}
         {scene !== null ? (
           <Scene plan={scene} reveal={reveal} />
         ) : (
@@ -144,12 +169,14 @@ export default function Viewport({ run, frame }: ViewportProps) {
         </span>
       )}
       <CameraBar
-        mode={orbit.mode}
-        orbit={orbit.orbit}
-        onZoom={orbit.zoomBy}
-        onReset={orbit.reset}
-        canZoomIn={orbit.canZoomIn}
-        canZoomOut={orbit.canZoomOut}
+        readout={camera.readout}
+        hint={camera.hint}
+        onToggleMode={camera.toggleMode}
+        onZoom={camera.zoomBy}
+        onAdvance={camera.advance}
+        onReset={camera.reset}
+        canZoomIn={camera.canZoomIn}
+        canZoomOut={camera.canZoomOut}
       />
     </div>
   )

@@ -27,7 +27,8 @@ import {
   resetOrbit as resetOrbitPose,
   zoomBy as zoomOrbitBy,
 } from './orbit.ts'
-import type { CameraMode, OrbitCamera } from './orbit.ts'
+import type { OrbitCamera } from './orbit.ts'
+import type { CameraMode } from './modes.ts'
 
 /** What a camera control surface gets from {@link useOrbitCamera}. */
 export interface OrbitController {

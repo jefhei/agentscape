@@ -273,9 +273,25 @@ body {
   padding: 0.1rem 0.4rem;
   border: 1px solid #232b3d;
   border-radius: 999px;
+  background: #11151e;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #8fc3ff;
+  font: inherit;
+  font-size: 0.65rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+/* The chip is the switch (M4-T3): hovering it promises the other mode. */
+.camera-mode:hover {
+  border-color: #33405c;
+  color: #ffffff;
+}
+
+.camera-mode[data-mode='fly'] {
+  color: #ffd9a0;
+  border-color: #3b3221;
 }
 
 .camera-readout {
@@ -323,11 +339,30 @@ body {
   color: #8fc3ff;
 }
 
-/* The canvas is a camera surface: grab to orbit, grabbing while dragging. */
+/* What the canvas does under the pointer, per mode (M4-T3). Quiet on purpose:
+   it is a reminder, not a label, and the bar must not grow into documentation. */
+.camera-hint {
+  max-width: 15rem;
+  color: #5f6b82;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The canvas is a camera surface: grab to orbit, looking while dragging (M4-T3). */
 .viewport canvas {
   cursor: grab;
 }
 
 .viewport canvas.is-orbiting {
+  cursor: grabbing;
+}
+
+/* Inside the run the pointer looks around, so the cursor says so. */
+.viewport[data-camera-mode='fly'] canvas {
+  cursor: move;
+}
+
+.viewport canvas.is-flying {
   cursor: grabbing;
 }

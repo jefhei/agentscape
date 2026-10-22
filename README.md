@@ -120,8 +120,19 @@ is re-derived at every distance so zooming out never clips the cloud. Drag
 (primary button, grab-the-cloud) and wheel (line/page deltas normalized, capped
 per event) are measured by `OrbitCameraRig` and mapped by the pure module;
 `CameraBar` is the accessible control surface (zoom in/out, reset) and the
-readout.
-Next: **M4-T3 — fly camera mode (move inside the run)**.
+readout. The fly camera (M4-T3) is landed in [`src/camera/`](src/camera/fly.ts) —
+`createFlyCamera` takes over the pose the camera is already looking from (the mode
+switch seeds it, so flying never teleports the view), the eye *is* the state and
+`flyForward` / `flyRight` derive the frame from the same spherical rule the orbit
+uses, `flyLookBy` / `flyMove` / `flyAdvance` / `resetFly` are pure clamped
+transitions (speed, wheel advance and the flight envelope are all multiples of the
+cloud's own radius, a frame's delta is capped, and the composed direction is
+normalized so a diagonal is not faster), and the far plane is derived from the
+envelope rather than the look distance so turning round inside a big cloud never
+clips it. `FlyCameraRig` measures the drag, the wheel and the held WASD/Q-E keys
+(one `requestAnimationFrame` loop while a key is down, real elapsed time per
+frame), and the mode chip in `CameraBar` is the switch between the two modes.
+Next: **M4-T4 — node click → detail panel**.
 
 ## Stack
 

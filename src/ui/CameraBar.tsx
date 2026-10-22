@@ -1,91 +1,153 @@
-import { describeOrbit } from '../camera/orbit.ts'
-import type { CameraMode, OrbitCamera } from '../camera/orbit.ts'
+import type { CameraReadout } from '../camera/cameraState.ts'
+import { cameraModeSwitchLabel } from '../camera/modes.ts'
 
 /**
- * The camera bar (M4-T2) — the render half of the orbit mode's controls.
+ * The camera bar (M4-T2, two modes since M4-T3) — the render half of the camera
+ * controls.
  *
  * A deliberately dumb overlay, exactly like the transport bar: it renders the
- * state the pure orbit model ({@link describeOrbit}) hands it and dispatches one
- * control per button. It decides no rule — not the drag sensitivity, not the
- * dolly range, not what "reset" means — because those are the model's and the
- * model is unit-tested.
+ * readout the pure layer hands it ({@link CameraReadout}, a discriminated union the
+ * mode switch produces) and dispatches one control per button. It decides no rule —
+ * not the drag sensitivity, not the dolly range, not the flight speed, not what
+ * "reset" means — because those are the models' and the models are unit-tested.
  *
- * Why buttons at all when the canvas already takes a drag and a wheel: **the
- * camera must be operable without a precise pointing device**, and a zoom step
- * has to be reachable from a keyboard and a screen reader. The buttons are the
- * honest accessible path to the same two transitions the pointer drives, and
- * they double as the only way to verify the camera in a headless run. The mode
- * chip is a label, not a control, until M4-T3 adds a second mode to select.
+ * ## Why buttons at all when the canvas already takes a drag and a wheel
  *
- * Positioning (top-left, clear of the transport at the bottom and the boot chip
- * at the top-right) lives in `App.css`; nothing here asserts how it looks — that
- * is the human review's job (M5-T5).
+ * **The camera must be operable without a precise pointing device**, and a zoom
+ * step / a mode switch / a metre of forward flight has to be reachable from a
+ * keyboard and a screen reader. The buttons are the honest accessible path to the
+ * same transitions the pointer drives, and they double as the only way to verify the
+ * camera in a headless run. So each mode gets its own control group:
+ *
+ * - **orbit** — dolly out / in, and reset;
+ * - **fly** — advance back / forward, and reset (looking around needs a pointer, but
+ *   moving does not).
+ *
+ * The mode chip is itself the switch: clicking "Orbit" offers "Fly" — a label that
+ * does nothing is the one thing a two-mode bar must not have.
+ *
+ * Positioning (top-left, clear of the transport at the bottom and the boot chip at
+ * the top-right) lives in `App.css`; nothing here asserts how it looks — that is the
+ * human review's job (M5-T5).
  */
 export interface CameraBarProps {
-  /** The active camera mode. */
-  mode: CameraMode
-  /** The orbit state to render. */
-  orbit: OrbitCamera
-  /** Dolly by `steps` (positive = closer). */
+  /** The active mode's readout (from `describeCamera`). */
+  readout: CameraReadout
+  /** The active mode's one-line pointer hint (from `cameraModeHint`). */
+  hint: string
+  /** Switch to the other camera mode. */
+  onToggleMode: () => void
+  /** Orbit: dolly by `steps` (positive = closer). */
   onZoom: (steps: number) => void
-  /** Return to the scene's opening shot. */
+  /** Fly: advance along the look direction by `steps` (positive = forward). */
+  onAdvance: (steps: number) => void
+  /** Return the active mode to its opening shot. */
   onReset: () => void
-  /** Whether the dolly can still come closer. */
+  /** Orbit: whether the dolly can still come closer. */
   canZoomIn: boolean
-  /** Whether the dolly can still go further out. */
+  /** Orbit: whether the dolly can still go further out. */
   canZoomOut: boolean
 }
 
 export default function CameraBar({
-  mode,
-  orbit,
+  readout,
+  hint,
+  onToggleMode,
   onZoom,
+  onAdvance,
   onReset,
   canZoomIn,
   canZoomOut,
 }: CameraBarProps) {
-  const readout = describeOrbit(orbit)
+  const switchTo = cameraModeSwitchLabel(readout.mode)
 
   return (
     <section className="camera-bar" data-testid="camera-bar" aria-label="Camera">
-      <span className="camera-mode" data-testid="camera-mode" data-mode={mode}>
+      <button
+        type="button"
+        className="camera-mode"
+        data-testid="camera-mode"
+        data-mode={readout.mode}
+        aria-label={`Switch to ${switchTo.toLowerCase()} camera`}
+        title={`Switch to ${switchTo.toLowerCase()} camera`}
+        onClick={() => onToggleMode()}
+      >
         {readout.modeLabel}
-      </span>
+      </button>
 
       <span className="camera-readout" data-testid="camera-readout">
-        <span data-testid="camera-azimuth">{readout.azimuthLabel}</span>
-        {' / '}
-        <span data-testid="camera-elevation">{readout.elevationLabel}</span>
-        {' · '}
-        <span data-testid="camera-distance">{readout.distanceLabel}</span>
+        {readout.mode === 'orbit' ? (
+          <>
+            <span data-testid="camera-azimuth">{readout.azimuthLabel}</span>
+            {' / '}
+            <span data-testid="camera-elevation">{readout.elevationLabel}</span>
+            {' · '}
+            <span data-testid="camera-distance">{readout.distanceLabel}</span>
+          </>
+        ) : (
+          <>
+            <span data-testid="camera-heading">{readout.headingLabel}</span>
+            {' / '}
+            <span data-testid="camera-pitch">{readout.pitchLabel}</span>
+            {' · '}
+            <span data-testid="camera-altitude">{readout.altitudeLabel}</span>
+          </>
+        )}
       </span>
 
       <div className="camera-controls">
-        <button
-          type="button"
-          className="camera-button"
-          data-testid="camera-zoom-out"
-          aria-label="Zoom out"
-          title="Zoom out"
-          disabled={!canZoomOut}
-          onClick={() => onZoom(-1)}
-        >
-          −
-        </button>
-        <span className="camera-zoom" data-testid="camera-zoom">
-          {readout.zoomLabel}
-        </span>
-        <button
-          type="button"
-          className="camera-button"
-          data-testid="camera-zoom-in"
-          aria-label="Zoom in"
-          title="Zoom in"
-          disabled={!canZoomIn}
-          onClick={() => onZoom(1)}
-        >
-          +
-        </button>
+        {readout.mode === 'orbit' ? (
+          <>
+            <button
+              type="button"
+              className="camera-button"
+              data-testid="camera-zoom-out"
+              aria-label="Zoom out"
+              title="Zoom out"
+              disabled={!canZoomOut}
+              onClick={() => onZoom(-1)}
+            >
+              −
+            </button>
+            <span className="camera-zoom" data-testid="camera-zoom">
+              {readout.zoomLabel}
+            </span>
+            <button
+              type="button"
+              className="camera-button"
+              data-testid="camera-zoom-in"
+              aria-label="Zoom in"
+              title="Zoom in"
+              disabled={!canZoomIn}
+              onClick={() => onZoom(1)}
+            >
+              +
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="camera-button"
+              data-testid="camera-advance-back"
+              aria-label="Fly back"
+              title="Fly back"
+              onClick={() => onAdvance(-1)}
+            >
+              ↓
+            </button>
+            <button
+              type="button"
+              className="camera-button"
+              data-testid="camera-advance-forward"
+              aria-label="Fly forward"
+              title="Fly forward"
+              onClick={() => onAdvance(1)}
+            >
+              ↑
+            </button>
+          </>
+        )}
         <button
           type="button"
           className="camera-button"
@@ -97,6 +159,10 @@ export default function CameraBar({
           ⌂
         </button>
       </div>
+
+      <span className="camera-hint" data-testid="camera-hint">
+        {hint}
+      </span>
     </section>
   )
 }

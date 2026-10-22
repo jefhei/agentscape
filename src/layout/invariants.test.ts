@@ -490,6 +490,15 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       // target plus a spherical direction times the dolly distance — it authors
       // no coordinate of its own, and it is pure data (no three.js, no DOM).
       'src/camera/orbit.ts',
+      // The fly camera (M4-T3) is seeded from a pose the mode switch hands over and
+      // then moved by its own arithmetic: the eye is the state, so it places nothing
+      // by hand either — and the look direction comes from `directionFromAngles`.
+      'src/camera/fly.ts',
+      // The mode vocabulary (M4-T3) is a leaf: two names, two labels, one hint.
+      'src/camera/modes.ts',
+      // The active-mode seam (M4-T3) only dispatches to the two pose rules above;
+      // it composes no geometry of its own.
+      'src/camera/cameraState.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')

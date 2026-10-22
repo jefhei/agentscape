@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect } from 'react'
-import * as THREE from 'three'
 import { useThree } from '@react-three/fiber'
 import type { SceneCamera } from '../scene/scenePlan.ts'
+import { applySceneCamera } from './applyPose.ts'
 import { wheelZoomSteps } from './orbit.ts'
 
 /**
@@ -61,16 +61,10 @@ export default function OrbitCameraRig({
 
   // Apply the pose. `useLayoutEffect`: the camera must match the plan in the same
   // commit that renders the scene, or the first frame would be framed by R3F's
-  // default camera looking at the origin.
+  // default camera looking at the origin. Since M4-T3 this is the shared
+  // {@link applySceneCamera} the fly rig also uses — one pose applier, no drift.
   useLayoutEffect(() => {
-    three.position.set(camera.position.x, camera.position.y, camera.position.z)
-    three.lookAt(camera.target.x, camera.target.y, camera.target.z)
-    if (three instanceof THREE.PerspectiveCamera) {
-      three.fov = camera.fov
-      three.near = camera.near
-      three.far = camera.far
-      three.updateProjectionMatrix()
-    }
+    applySceneCamera(three, camera)
   }, [three, camera])
 
   useEffect(() => {
