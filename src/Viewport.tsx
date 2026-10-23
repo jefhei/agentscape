@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import * as THREE from 'three'
 import { Canvas } from '@react-three/fiber'
+import type { AgentId } from './types/index.ts'
 import type { TimelineFrame } from './timeline/index.ts'
 import type { TraceModel } from './model/index.ts'
 import Scene from './scene/Scene.tsx'
@@ -40,7 +41,11 @@ const TONE_MAPPING: Record<EnvironmentPlan['toneMapping'], THREE.ToneMapping> = 
  * control surface and the switch) and the playback reveal handed down by the app
  * shell (M4-T1). Everything else — what to draw and where — was decided in
  * `src/scene/`; how the camera frames it was decided in `src/scene/scenePlan.ts`
- * (the opening shot) and `src/camera/` (the two pose rules).
+ * (the opening shot) and `src/camera/` (the two pose rules). The **selection**
+ * (M4-T4) is the shell's too: this component never decides which agent is
+ * inspected, it hands the id and the click callback down to the scene and
+ * reports the id as `data-selected-agent` so a headless probe can see that a
+ * click reached the app's state.
  *
  * Exactly one camera rig is mounted at a time. They are not merged into one
  * "smart" rig because their gestures genuinely differ (drag-to-orbit vs
@@ -67,9 +72,25 @@ export interface ViewportProps {
    * `elapsedMs` alone is what the scene needs; the rest is the transport's.
    */
   frame?: TimelineFrame
+  /**
+   * The agent the inspector is open on (M4-T4), highlighted by the node layer.
+   * The viewport owns no selection state — the shell does — it only reports it
+   * (`data-selected-agent`) and hands it to the scene.
+   */
+  selectedAgentId?: AgentId | null
+  /**
+   * Called with the agent a click on a node picked (M4-T4). Owned by the shell's
+   * `useSelection`; omitted leaves the nodes inert.
+   */
+  onSelectAgent?: (agentId: AgentId) => void
 }
 
-export default function Viewport({ run, frame }: ViewportProps) {
+export default function Viewport({
+  run,
+  frame,
+  selectedAgentId = null,
+  onSelectAgent,
+}: ViewportProps) {
   const [ready, setReady] = useState(false)
 
   // One scene pass for the whole run, memoized on the run alone: every plan below
@@ -126,6 +147,7 @@ export default function Viewport({ run, frame }: ViewportProps) {
         pose.position.y.toFixed(2),
         pose.position.z.toFixed(2),
       ].join(',')}
+      data-selected-agent={selectedAgentId ?? undefined}
     >
       <Canvas
         camera={{
@@ -158,7 +180,12 @@ export default function Viewport({ run, frame }: ViewportProps) {
           />
         )}
         {scene !== null ? (
-          <Scene plan={scene} reveal={reveal} />
+          <Scene
+            plan={scene}
+            reveal={reveal}
+            selectedAgentId={selectedAgentId}
+            onSelectAgent={onSelectAgent}
+          />
         ) : (
           <EnvironmentRig plan={environment} />
         )}

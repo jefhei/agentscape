@@ -122,4 +122,13 @@ describe('App shell (M1-T1)', () => {
     expect(viewport).toHaveAttribute('data-camera-distance', '12.000')
     expect(screen.getByTestId('camera-zoom')).toHaveTextContent('1.00×')
   })
+
+  it('mounts the inspector closed, with nothing selected (M4-T4)', () => {
+    render(<App />)
+    // The panel is a selection's consequence: with no node clicked there is no
+    // panel and the viewport reports no selected agent. (The click path itself
+    // needs WebGL raycasting, so it is verified in a browser probe, not here.)
+    expect(screen.queryByTestId('detail-panel')).toBeNull()
+    expect(screen.getByTestId('viewport')).not.toHaveAttribute('data-selected-agent')
+  })
 })

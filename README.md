@@ -132,7 +132,18 @@ envelope rather than the look distance so turning round inside a big cloud never
 clips it. `FlyCameraRig` measures the drag, the wheel and the held WASD/Q-E keys
 (one `requestAnimationFrame` loop while a key is down, real elapsed time per
 frame), and the mode chip in `CameraBar` is the switch between the two modes.
-Next: **M4-T4 — node click → detail panel**.
+The node inspector (M4-T4) is landed in [`src/inspect/`](src/inspect/inspect.ts) —
+`buildAgentDetail` joins the run's facts into one agent's panel model (derived
+role/parent/children and peers, its messages in both directions with counterparts
+and offsets, its tool calls, its activity window and share of the run, and its
+tokens/spend itemised per message and per tool call, checked against the model's
+own totals so a drifted attribution fails loudly), with each row flagged as fired
+or pending at the playhead and the panel model fully unit-tested; the click path
+is the pure `agentIdForClick` (instance index → agent, and a drag past 4 px is a
+camera gesture, not a click) plus `useSelection` in the shell, and
+`AgentDetailPanel` is a thin consumer that dims pending rows, caps its lists and
+closes on its button or Escape.
+Next: **M4-T5 — filter and focus: by agent, by event type, by time window**.
 
 ## Stack
 

@@ -499,6 +499,11 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       // The active-mode seam (M4-T3) only dispatches to the two pose rules above;
       // it composes no geometry of its own.
       'src/camera/cameraState.ts',
+      // The inspector (M4-T4) selects and describes — it reads the settled
+      // positions' owners and places nothing: the detail model composes facts,
+      // and the selection model maps a picked instance index to an agent id.
+      'src/inspect/inspect.ts',
+      'src/inspect/selection.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')

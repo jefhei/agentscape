@@ -366,3 +366,234 @@ body {
 .viewport canvas.is-flying {
   cursor: grabbing;
 }
+
+/* ── Node inspector (M4-T4) ─────────────────────────────────────────────────
+   A right-hand overlay between the boot chip (top right) and the transport
+   (bottom): like the transport, it floats over the scene rather than taking
+   height from it, because the canvas is the product and every framing decision
+   depends on its size. `min(21rem, …)` keeps it usable in a narrow window, and
+   the panel scrolls internally rather than growing past the transport. */
+.detail-panel {
+  position: absolute;
+  right: 0.9rem;
+  top: 2.6rem;
+  bottom: 4.6rem;
+  width: min(21rem, calc(100% - 1.8rem));
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  overflow-y: auto;
+  border: 1px solid #1b2130;
+  border-radius: 0.75rem;
+  background: rgb(11 13 18 / 92%);
+  backdrop-filter: blur(6px);
+  font-size: 0.72rem;
+  color: #c8d2e4;
+}
+
+.detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.detail-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.detail-name {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-role {
+  flex: none;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid #232b3d;
+  border-radius: 999px;
+  background: #11151e;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8fc3ff;
+}
+
+.detail-role[data-role='coordinator'] {
+  color: #ffd9a0;
+  border-color: #3b3221;
+}
+
+.detail-role[data-role='unknown'] {
+  color: #6b7688;
+}
+
+.detail-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.25rem;
+  border: 1px solid #232b3d;
+  border-radius: 0.35rem;
+  background: #11151e;
+  color: #c8d2e4;
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.detail-close:hover {
+  border-color: #33405c;
+  color: #ffffff;
+}
+
+.detail-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+}
+
+.detail-fact {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.detail-fact dt {
+  flex: none;
+  width: 5.4rem;
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7688;
+}
+
+.detail-fact dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-share {
+  color: #7d8aa3;
+}
+
+.detail-split {
+  display: block;
+  font-size: 0.66rem;
+  color: #5f6b82;
+}
+
+.detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #1b2130;
+}
+
+.detail-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9aa6bd;
+}
+
+.detail-count {
+  font-size: 0.64rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #6b7688;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.detail-empty {
+  margin: 0;
+  color: #5f6b82;
+}
+
+/* Rows are two lines: who + when on the first, what was said on the second.
+   A pending row (after the playhead) is dimmed, not hidden — the panel shows
+   the agent's whole footprint and the transport decides how much has happened. */
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.detail-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.4rem;
+  padding: 0.25rem 0.35rem;
+  border-radius: 0.35rem;
+  background: #0e1219;
+}
+
+.detail-row[data-fired='false'] {
+  opacity: 0.45;
+}
+
+.detail-glyph {
+  flex: none;
+  color: #3c5480;
+}
+
+.detail-who {
+  color: #8fc3ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 10rem;
+}
+
+.detail-meta {
+  display: flex;
+  gap: 0.35rem;
+  margin-left: auto;
+  color: #5f6b82;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.detail-meta code {
+  color: #9fd0ff;
+  font-size: 0.68rem;
+}
+
+.detail-subject {
+  flex: 1 1 100%;
+  padding-left: 1.1rem;
+  overflow-wrap: anywhere;
+}
+
+.detail-more {
+  margin: 0;
+  font-size: 0.66rem;
+  color: #5f6b82;
+}

@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import type { ThreeEvent } from '@react-three/fiber'
+import type { AgentId } from '../types/index.ts'
 import type { TraceModel } from '../model/index.ts'
+import { agentIdForClick, selectionGain } from '../inspect/selection.ts'
 import { buildNodeScenePlan } from './nodes.ts'
 import type { NodeSceneOptions, NodeScenePlan } from './nodes.ts'
 import type { SceneReveal } from './reveal.ts'
@@ -40,6 +43,18 @@ import type { SceneReveal } from './reveal.ts'
  * A run with no agents renders nothing (the layer returns `null`), matching the
  * plan's `drawCalls: 0` for an empty layer.
  *
+ * ## Clicking a node (M4-T4)
+ *
+ * The mesh also reports clicks: R3F raycasts the instances and hands back an
+ * `instanceId`, which is an index into the same canonical instance order the
+ * plan was built in — so the instance → agent mapping is `agentIdForClick`
+ * (`src/inspect/selection.ts`), not a lookup invented here. That helper also
+ * decides that a gesture the pointer travelled across is a camera drag, not a
+ * click; this component only forwards the answer. Selection *state* is the app
+ * shell's (`useSelection`), never the scene's, and the only thing the layer does
+ * with it is scale the selected node's glow by `selectionGain` — the same
+ * multiply-by-a-scalar-is-radiance idiom the reveal uses.
+ *
  * ## Headless note
  *
  * This is the first source module to import three.js directly, and in the jsdom
@@ -67,6 +82,19 @@ export interface AgentNodeLayerProps {
    * agent, then full. Omitted / `null` draws every node lit (the static scene).
    */
   reveal?: SceneReveal | null
+  /**
+   * Called with the agent a click picked (M4-T4). A click is a tap, not a drag:
+   * the pick rule ({@link agentIdForClick}) ignores a gesture the pointer
+   * travelled across, so orbiting the cloud never opens a panel on release.
+   * Omit to make the nodes inert.
+   */
+  onSelect?: (agentId: AgentId) => void
+  /**
+   * The selected agent (M4-T4), drawn at {@link SELECTED_NODE_GAIN} its own
+   * calibrated radiance. `null`/omitted draws every node at exactly its plan's
+   * brightness.
+   */
+  selectedAgentId?: AgentId | null
 }
 
 export default function AgentNodeLayer({
@@ -74,6 +102,8 @@ export default function AgentNodeLayer({
   plan,
   options,
   reveal,
+  onSelect,
+  selectedAgentId = null,
 }: AgentNodeLayerProps) {
   // Rebuilding the plan is pure and cheap relative to a frame; memoized so a
   // re-render with the same run/options does not re-settle the layout. A supplied
@@ -99,7 +129,11 @@ export default function AgentNodeLayer({
       // drawn at `DORMANT_NODE_GLOW` of its own colour, an active one at full.
       // Multiplying a linear RGB glow by a scalar IS scaling its radiance
       // linearly, which is why no second calibration curve is needed here.
-      const glow = reveal?.nodes[index]?.glow ?? 1
+      // Since M4-T4 the selected node is scaled by the pure `selectionGain` on
+      // top of that — the same rule in the same place, one number further.
+      const glow =
+        (reveal?.nodes[index]?.glow ?? 1) *
+        selectionGain(selectedAgentId, instance.agentId)
       color.setRGB(
         instance.color[0] * glow,
         instance.color[1] * glow,
@@ -110,15 +144,30 @@ export default function AgentNodeLayer({
     mesh.instanceMatrix.needsUpdate = true
     if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true
     mesh.computeBoundingSphere()
-  }, [resolved, reveal])
+  }, [resolved, reveal, selectedAgentId])
 
   if (resolved.count === 0) return null
+
+  /**
+   * A click picks the instance under the pointer (M4-T4). The whole rule — the
+   * instance → agent mapping and the "a drag is not a click" guard — is the pure
+   * `agentIdForClick`; this handler only reports what it decided. `stopPropagation`
+   * keeps one click from selecting a closer node *and* a farther one behind it.
+   */
+  const onClick = (event: ThreeEvent<MouseEvent>): void => {
+    if (onSelect === undefined) return
+    const agentId = agentIdForClick(resolved, event)
+    if (agentId === null) return
+    event.stopPropagation()
+    onSelect(agentId)
+  }
 
   return (
     <instancedMesh
       ref={meshRef}
       args={[undefined, undefined, resolved.count]}
       frustumCulled={false}
+      onClick={onClick}
     >
       <sphereGeometry args={[1, resolved.style.segments, resolved.style.segments]} />
       {/* Unlit emitter (M3-T4): the per-instance colour carries the calibrated

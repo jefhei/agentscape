@@ -1,3 +1,4 @@
+import type { AgentId } from '../types/index.ts'
 import type { ScenePlan } from './scenePlan.ts'
 import type { SceneReveal } from './reveal.ts'
 import AgentNodeLayer from './AgentNodeLayer.tsx'
@@ -30,6 +31,12 @@ import EnvironmentRig from './EnvironmentRig.tsx'
  * nodes, arcs and glyphs are revealing the *same instant* of the *same run*, so
  * there is no per-layer notion of "now" that could drift.
  *
+ * Since M4-T4 it also forwards the **selection** (one agent id, one callback) to
+ * the node layer alone. Arcs and glyphs take no selection: the inspector is about
+ * an agent, and highlighting an arc would imply the *link* was selected — a
+ * different idea, and not this task's. The callback is the app shell's
+ * `useSelection` toggle; the scene owns no selection state.
+ *
  * PropTypes are plans, not runs, on purpose: a caller that has a `TraceModel` and
  * no plan should call {@link buildScenePlan} (memoized on the run) rather than let
  * each layer derive its own view of the run.
@@ -48,13 +55,28 @@ export interface SceneProps {
    * static scene a run gets before the transport exists.
    */
   reveal?: SceneReveal | null
+  /** The selected agent, highlighted by the node layer (M4-T4). */
+  selectedAgentId?: AgentId | null
+  /** Called when a node is clicked (M4-T4); omitted makes the nodes inert. */
+  onSelectAgent?: (agentId: AgentId) => void
 }
 
-export default function Scene({ plan, reveal }: SceneProps) {
+export default function Scene({
+  plan,
+  reveal,
+  selectedAgentId = null,
+  onSelectAgent,
+}: SceneProps) {
   return (
     <>
       <EnvironmentRig plan={plan.environment} />
-      <AgentNodeLayer run={plan.run} plan={plan.nodes} reveal={reveal} />
+      <AgentNodeLayer
+        run={plan.run}
+        plan={plan.nodes}
+        reveal={reveal}
+        selectedAgentId={selectedAgentId}
+        onSelect={onSelectAgent}
+      />
       <MessageArcLayer run={plan.run} plan={plan.arcs} reveal={reveal} />
       <GlyphLayer run={plan.run} plan={plan.glyphs} reveal={reveal} />
     </>

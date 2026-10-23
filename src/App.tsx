@@ -1,7 +1,9 @@
 import './App.css'
 import { buildFixture } from './fixtures/index.ts'
 import type { FixtureShape } from './fixtures/index.ts'
+import { useSelection } from './inspect/index.ts'
 import { usePlayback } from './playback/index.ts'
+import AgentDetailPanel from './ui/AgentDetailPanel.tsx'
 import TransportBar from './ui/TransportBar.tsx'
 import Viewport from './Viewport'
 
@@ -35,9 +37,17 @@ export const MOUNTED_RUN = buildFixture(DEFAULT_FIXTURE).run
  * scene at that instant (`src/scene/reveal.ts`). The three pieces stay separate on
  * purpose — the transport decides *when*, the reveal decides *how lit*, the scene
  * decides *where*. None of them re-derives another's answer.
+ *
+ * Since M4-T4 it owns the **selection** as well: `useSelection` holds the
+ * inspected agent (clicked in the viewport, pruned when the run changes), the
+ * viewport highlights it, and {@link AgentDetailPanel} renders its detail at the
+ * current playhead. The shell is the right owner because the click, the scene and
+ * the panel are three consumers of one fact — putting the state in any one of
+ * them would make the other two reach into it.
  */
 export default function App() {
   const playback = usePlayback(MOUNTED_RUN)
+  const selection = useSelection(MOUNTED_RUN)
 
   return (
     <div className="app">
@@ -48,11 +58,22 @@ export default function App() {
         </p>
       </header>
       <main className="app-main">
-        <Viewport run={MOUNTED_RUN} frame={playback.frame} />
+        <Viewport
+          run={MOUNTED_RUN}
+          frame={playback.frame}
+          selectedAgentId={selection.agentId}
+          onSelectAgent={selection.toggle}
+        />
         <TransportBar
           state={playback.state}
           scrubber={playback.scrubber}
           onAction={playback.dispatch}
+        />
+        <AgentDetailPanel
+          run={MOUNTED_RUN}
+          agentId={selection.agentId}
+          elapsedMs={playback.frame.elapsedMs}
+          onClose={selection.clear}
         />
       </main>
     </div>
