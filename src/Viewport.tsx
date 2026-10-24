@@ -4,6 +4,9 @@ import { Canvas } from '@react-three/fiber'
 import type { AgentId } from './types/index.ts'
 import type { TimelineFrame } from './timeline/index.ts'
 import type { TraceModel } from './model/index.ts'
+import { isFilterActive } from './filter/filter.ts'
+import type { FilterState } from './filter/filter.ts'
+import { filterRevealTrack } from './filter/filterTrack.ts'
 import Scene from './scene/Scene.tsx'
 import EnvironmentRig from './scene/EnvironmentRig.tsx'
 import { buildEnvironmentPlan } from './scene/environment.ts'
@@ -83,6 +86,17 @@ export interface ViewportProps {
    * `useSelection`; omitted leaves the nodes inert.
    */
   onSelectAgent?: (agentId: AgentId) => void
+  /**
+   * The lens the scene is drawn through (M4-T5). Omit for no filter: the run
+   * exactly as recorded.
+   *
+   * The filter does not rebuild the scene — it **narrows the reveal**
+   * (`filterRevealTrack`), so the settled layout, the cast and the wiring stay
+   * exactly where they are and only the activity inside the filter lights up.
+   * A second scene plan would re-settle the layout on every chip click; narrowing
+   * the reveal costs one pass over the kept messages and nothing else.
+   */
+  filter?: FilterState
 }
 
 export default function Viewport({
@@ -90,6 +104,7 @@ export default function Viewport({
   frame,
   selectedAgentId = null,
   onSelectAgent,
+  filter,
 }: ViewportProps) {
   const [ready, setReady] = useState(false)
 
@@ -104,12 +119,22 @@ export default function Viewport({
     () => (scene === null ? null : buildRevealTrack(scene)),
     [scene],
   )
+
+  // The lens (M4-T5): one pass over the kept messages, memoized on the track, the
+  // run and the filter value. An identity filter costs nothing extra — the
+  // unfiltered track is used as-is, so "no filter" is genuinely no work.
+  const filteredTrack = useMemo(() => {
+    if (revealTrack === null || run === undefined) return revealTrack
+    if (filter === undefined || !isFilterActive(filter)) return revealTrack
+    return filterRevealTrack(revealTrack, run, filter)
+  }, [revealTrack, run, filter])
+
   const reveal = useMemo(
     () =>
-      revealTrack === null || frame === undefined
+      filteredTrack === null || frame === undefined
         ? null
-        : revealAt(revealTrack, frame.elapsedMs),
-    [revealTrack, frame],
+        : revealAt(filteredTrack, frame.elapsedMs),
+    [filteredTrack, frame],
   )
 
   // The empty scene still needs a rig — and a camera — so its frame matches what a
@@ -148,6 +173,7 @@ export default function Viewport({
         pose.position.z.toFixed(2),
       ].join(',')}
       data-selected-agent={selectedAgentId ?? undefined}
+      data-filter-active={filter === undefined ? undefined : isFilterActive(filter)}
     >
       <Canvas
         camera={{

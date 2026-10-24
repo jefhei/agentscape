@@ -1,9 +1,11 @@
 import './App.css'
 import { buildFixture } from './fixtures/index.ts'
 import type { FixtureShape } from './fixtures/index.ts'
+import { useFilter } from './filter/index.ts'
 import { useSelection } from './inspect/index.ts'
 import { usePlayback } from './playback/index.ts'
 import AgentDetailPanel from './ui/AgentDetailPanel.tsx'
+import FilterBar from './ui/FilterBar.tsx'
 import TransportBar from './ui/TransportBar.tsx'
 import Viewport from './Viewport'
 
@@ -44,10 +46,18 @@ export const MOUNTED_RUN = buildFixture(DEFAULT_FIXTURE).run
  * current playhead. The shell is the right owner because the click, the scene and
  * the panel are three consumers of one fact — putting the state in any one of
  * them would make the other two reach into it.
+ *
+ * Since M4-T5 it owns the **filter** too: `useFilter` holds the three facets (agent,
+ * event type, time window), {@link FilterBar} is their control surface, and the
+ * viewport draws the scene through the lens. The filter and the selection are
+ * separate on purpose — one narrows the population, the other asks about a single
+ * agent — so opening the inspector does not filter the run and filtering does not
+ * close the panel: a dimmed agent is still a describable one.
  */
 export default function App() {
   const playback = usePlayback(MOUNTED_RUN)
   const selection = useSelection(MOUNTED_RUN)
+  const filter = useFilter(MOUNTED_RUN)
 
   return (
     <div className="app">
@@ -63,6 +73,16 @@ export default function App() {
           frame={playback.frame}
           selectedAgentId={selection.agentId}
           onSelectAgent={selection.toggle}
+          filter={filter.filter}
+        />
+        <FilterBar
+          agents={MOUNTED_RUN.agents}
+          view={filter.view}
+          onToggleAgent={filter.toggleAgent}
+          onIsolateAgent={filter.isolateAgent}
+          onToggleKind={filter.toggleKind}
+          onWindow={filter.setWindow}
+          onClear={filter.clear}
         />
         <TransportBar
           state={playback.state}

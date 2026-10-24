@@ -97,8 +97,13 @@ export class RevealError extends Error {
 /** Unordered-pair separator; the same idiom the layout's adjacency uses. */
 const PAIR_SEPARATOR = '\u0000'
 
-/** Key for an undirected pair, canonically ordered so both directions collapse. */
-function pairKey(a: AgentId, b: AgentId): string {
+/**
+ * Key for an undirected pair, canonically ordered so both directions collapse.
+ *
+ * Exported since M4-T5: the filter narrows the *same* links the reveal counts, so
+ * it must key them the same way — one pairing rule, not two that agree by luck.
+ */
+export function pairKey(a: AgentId, b: AgentId): string {
   return compareModelIds(a, b) <= 0
     ? `${a}${PAIR_SEPARATOR}${b}`
     : `${b}${PAIR_SEPARATOR}${a}`

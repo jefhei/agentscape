@@ -504,6 +504,10 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       // and the selection model maps a picked instance index to an agent id.
       'src/inspect/inspect.ts',
       'src/inspect/selection.ts',
+      // The filter (M4-T5) narrows what the reveal lights: it keeps or drops
+      // facts, and places nothing of its own — so it must author no coordinate.
+      'src/filter/filter.ts',
+      'src/filter/filterTrack.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')

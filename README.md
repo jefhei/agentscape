@@ -143,7 +143,17 @@ is the pure `agentIdForClick` (instance index → agent, and a drag past 4 px is
 camera gesture, not a click) plus `useSelection` in the shell, and
 `AgentDetailPanel` is a thin consumer that dims pending rows, caps its lists and
 closes on its button or Escape.
-Next: **M4-T5 — filter and focus: by agent, by event type, by time window**.
+The filter (M4-T5) is landed in [`src/filter/`](src/filter/filter.ts) — three facets
+(agents, event types, time window), one reducer and three predicates, with an
+identity filter that provably changes nothing. The lens **narrows activity and keeps
+structure**: `filterRevealTrack` re-derives which messages still count and hands the
+result to the same reveal the playhead uses, so filtered-out nodes sit at their
+dormant glow, unfiltered links at their faint skeleton and filtered-out glyphs vanish —
+no second brightness model, no re-layout on a chip click. `FilterBar` is the thin
+control surface (agent chips, event-type toggles, two window sliders, a live "what
+survives" line; double-clicking an agent chip focuses on just that agent), and the
+viewport draws the scene through `useFilter`.
+Next: **M4-T6 — HUD overlay: run summary (agents, messages, duration, tokens, cost)**.
 
 ## Stack
 

@@ -131,4 +131,59 @@ describe('App shell (M1-T1)', () => {
     expect(screen.queryByTestId('detail-panel')).toBeNull()
     expect(screen.getByTestId('viewport')).not.toHaveAttribute('data-selected-agent')
   })
+
+  it('mounts the filter bar on the identity filter (M4-T5)', () => {
+    render(<App />)
+    const main = screen.getByRole('main')
+    expect(main).toContainElement(screen.getByTestId('filter-bar'))
+    // Every agent has a chip, every kind is on, and the scene is unfiltered.
+    for (const agent of MOUNTED_RUN.agents) {
+      expect(screen.getByTestId(`filter-agent-${agent.id}`)).toBeInTheDocument()
+    }
+    expect(screen.getByTestId('filter-summary')).toHaveTextContent(
+      `${MOUNTED_RUN.meta.agentCount} of ${MOUNTED_RUN.meta.agentCount} agents`,
+    )
+    expect(screen.getByTestId('viewport')).toHaveAttribute(
+      'data-filter-active',
+      'false',
+    )
+  })
+
+  it('narrows the scene from the filter bar (M4-T5)', () => {
+    render(<App />)
+    const viewport = screen.getByTestId('viewport')
+    // The filter reaches the *scene*, not just the UI: at t=0 the fan-out has one
+    // lit link and one fired glyph; dropping a facet changes what the reveal lights.
+    expect(viewport).toHaveAttribute('data-reveal-arcs', '1')
+    expect(viewport).toHaveAttribute('data-reveal-glyphs', '1')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tool calls' }))
+    expect(viewport).toHaveAttribute('data-filter-active', 'true')
+    expect(viewport).toHaveAttribute('data-reveal-glyphs', '0')
+    expect(viewport).toHaveAttribute('data-reveal-arcs', '1')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Messages' }))
+    expect(viewport).toHaveAttribute('data-reveal-arcs', '0')
+    expect(screen.getByTestId('filter-empty')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('filter-clear'))
+    expect(viewport).toHaveAttribute('data-filter-active', 'false')
+    expect(viewport).toHaveAttribute('data-reveal-arcs', '1')
+    expect(viewport).toHaveAttribute('data-reveal-glyphs', '1')
+  })
+
+  it('focuses on one agent with a double-click on its chip (M4-T5)', () => {
+    render(<App />)
+    const viewport = screen.getByTestId('viewport')
+    // One gesture reaches a single-agent lens: the worker's assignment stays in
+    // view, its sender lights as the counterpart, and the caller's tool call goes
+    // out of the lens.
+    fireEvent.doubleClick(screen.getByTestId('filter-agent-a_worker_alpha'))
+    expect(viewport).toHaveAttribute('data-filter-active', 'true')
+    expect(screen.getByTestId('filter-summary')).toHaveTextContent(
+      '2 of 6 agents · 1 of 5 messages · 0 of 5 tool calls',
+    )
+    expect(viewport).toHaveAttribute('data-reveal-glyphs', '0')
+    expect(viewport).toHaveAttribute('data-reveal-arcs', '1')
+  })
 })
