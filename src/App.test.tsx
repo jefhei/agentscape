@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import App, { MOUNTED_RUN } from './App'
+import { buildRunSummary } from './hud/index.ts'
 import { DRAW_CALL_CEILING } from './scene/index.ts'
+
+/** The summary the shell derives for the mounted run (the HUD's own numbers). */
+const MOUNTED_SUMMARY = buildRunSummary(MOUNTED_RUN)
 
 /**
  * jsdom has no WebGL, so the real R3F <Canvas> cannot mount in tests. Swap it
@@ -185,5 +189,40 @@ describe('App shell (M1-T1)', () => {
     )
     expect(viewport).toHaveAttribute('data-reveal-glyphs', '0')
     expect(viewport).toHaveAttribute('data-reveal-arcs', '1')
+  })
+
+  it('mounts the run HUD with the run’s own totals (M4-T6)', () => {
+    render(<App />)
+    const hud = screen.getByTestId('run-hud')
+    expect(screen.getByRole('main')).toContainElement(hud)
+    // The summary is the run's, not a number the shell made up.
+    expect(hud).toHaveAttribute('data-agents', String(MOUNTED_SUMMARY.counts.agents))
+    expect(hud).toHaveAttribute('data-duration-ms', String(MOUNTED_SUMMARY.durationMs))
+    expect(screen.getByTestId('run-hud-title')).toHaveTextContent('fixture: Fan-out')
+    expect(screen.getByTestId('run-hud-headline')).toHaveTextContent(
+      '6 agents · 5 messages · 5 tool calls · 4:00',
+    )
+    // v1's export carries no token or cost columns: the HUD says so rather than
+    // printing a zero, which would misreport an unrecorded run as free.
+    expect(screen.getByTestId('run-hud-cost')).toHaveTextContent('not recorded')
+    expect(screen.getByTestId('run-hud-note')).toHaveTextContent(
+      'This export records no token or cost data.',
+    )
+  })
+
+  it('keeps the HUD describing the run, not the playhead or the lens (M4-T6)', () => {
+    render(<App />)
+    const hud = screen.getByTestId('run-hud')
+    const before = hud.textContent
+    // Stepping the transport moves the playhead and the filter narrows the scene;
+    // neither changes what the run *is*.
+    fireEvent.click(screen.getByRole('button', { name: 'Next event' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Tool calls' }))
+    expect(screen.getByTestId('viewport')).toHaveAttribute(
+      'data-playback-elapsed',
+      '60000',
+    )
+    expect(hud.textContent).toBe(before)
+    expect(hud).toHaveAttribute('data-messages', String(MOUNTED_RUN.meta.messageCount))
   })
 })

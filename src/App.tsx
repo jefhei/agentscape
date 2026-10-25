@@ -1,11 +1,14 @@
 import './App.css'
+import { useMemo } from 'react'
 import { buildFixture } from './fixtures/index.ts'
 import type { FixtureShape } from './fixtures/index.ts'
 import { useFilter } from './filter/index.ts'
+import { buildRunSummary } from './hud/index.ts'
 import { useSelection } from './inspect/index.ts'
 import { usePlayback } from './playback/index.ts'
 import AgentDetailPanel from './ui/AgentDetailPanel.tsx'
 import FilterBar from './ui/FilterBar.tsx'
+import RunHud from './ui/RunHud.tsx'
 import TransportBar from './ui/TransportBar.tsx'
 import Viewport from './Viewport'
 
@@ -53,11 +56,21 @@ export const MOUNTED_RUN = buildFixture(DEFAULT_FIXTURE).run
  * separate on purpose — one narrows the population, the other asks about a single
  * agent — so opening the inspector does not filter the run and filtering does not
  * close the panel: a dimmed agent is still a describable one.
+ *
+ * Since M4-T6 it mounts the **run HUD**: {@link RunHud} prints the summary
+ * `buildRunSummary(MOUNTED_RUN)` derives — the run's own fixed totals (agents,
+ * messages, tool calls, duration, tokens, cost). That summary is derived from the
+ * run and shared by nothing else on screen — the transport reports the playhead,
+ * the filter bar reports the lens, and only the HUD describes the trace itself.
  */
 export default function App() {
   const playback = usePlayback(MOUNTED_RUN)
   const selection = useSelection(MOUNTED_RUN)
   const filter = useFilter(MOUNTED_RUN)
+  // The HUD's summary (M4-T6) is a pure function of the run, derived once for the
+  // life of the mount — outside React state on purpose: it must not move with the
+  // playhead or the lens, and there is nothing to invalidate it.
+  const summary = useMemo(() => buildRunSummary(MOUNTED_RUN), [])
 
   return (
     <div className="app">
@@ -75,6 +88,7 @@ export default function App() {
           onSelectAgent={selection.toggle}
           filter={filter.filter}
         />
+        <RunHud summary={summary} />
         <FilterBar
           agents={MOUNTED_RUN.agents}
           view={filter.view}

@@ -153,7 +153,19 @@ no second brightness model, no re-layout on a chip click. `FilterBar` is the thi
 control surface (agent chips, event-type toggles, two window sliders, a live "what
 survives" line; double-clicking an agent chip focuses on just that agent), and the
 viewport draws the scene through `useFilter`.
-Next: **M4-T6 — HUD overlay: run summary (agents, messages, duration, tokens, cost)**.
+The run HUD (M4-T6) is landed in [`src/hud/`](src/hud/hud.ts) — `buildRunSummary`
+reads the trace's own fixed totals into one formatted model (agents, messages with
+their broadcast subset, tool calls, duration, tokens, cost) and `RunHud` prints it as
+a pure readout. Two decisions shape it: the summary is a function of the **run alone**
+(no playhead, no filter, so it never disagrees with the trace it describes — the
+transport reports position and the filter bar reports the lens), and a figure the
+export never recorded is **reported as missing, not zeroed** — v1's
+`agent_messages` export carries no token or cost columns, so those facts print `—`
+with a note instead of claiming a free run. Every count is re-derived and checked
+against the run's own `RunMeta`, so a summary that contradicts its scene throws
+rather than rendering.
+Next: **M5-T1 — Scale to 1–2k nodes via instancing + level-of-detail; measure frame budget**
+(M5-T5, the visual review loop, is human-held: the automated build skips it).
 
 ## Stack
 

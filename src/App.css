@@ -557,6 +557,126 @@ body {
   color: #ffb4a0;
 }
 
+/* ── Run HUD (M4-T6) ─────────────────────────────────────────────────────────
+   A top-CENTRE overlay: the camera bar owns the top-left corner, the boot chip
+   and the inspector the right-hand edge, and the transport the bottom. Like the
+   rest it floats over the scene rather than taking height from it — the canvas
+   is the product. Kept to a single band of six figures so it cannot cover a
+   settled cloud; whether it reads as a HUD or as chrome is M5-T5's call. */
+.run-hud {
+  position: absolute;
+  left: 50%;
+  top: 0.75rem;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: min(34rem, 62%);
+  padding: 0.35rem 0.6rem 0.4rem;
+  border: 1px solid #1b2130;
+  border-radius: 0.55rem;
+  background: rgb(11 13 18 / 88%);
+  backdrop-filter: blur(6px);
+  font-size: 0.7rem;
+  color: #9aa6bd;
+  user-select: none;
+  pointer-events: none;
+}
+
+.run-hud-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.run-hud-title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #e8ecf4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Provenance chip: the one ingest format v1 accepts, stated rather than assumed. */
+.run-hud-source {
+  flex: none;
+  padding: 0 0.3rem;
+  border: 1px solid #232b3d;
+  border-radius: 999px;
+  background: #11151e;
+  font-size: 0.55rem;
+  letter-spacing: 0.04em;
+  color: #5f6b82;
+}
+
+.run-hud-headline {
+  margin: 0;
+  font-size: 0.6rem;
+  color: #7d8aa3;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Six figures in one row: label over value, tabular so the numbers line up. */
+.run-hud-facts {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin: 0;
+  padding-top: 0.2rem;
+  border-top: 1px solid #1b2130;
+}
+
+.run-hud-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.run-hud-fact dt {
+  font-size: 0.55rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #5f6b82;
+  white-space: nowrap;
+}
+
+.run-hud-fact dd {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.run-hud-value {
+  color: #c8d2e4;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A figure the export never carried reads as absent, not as a quiet zero. */
+.run-hud-fact[data-recorded='false'] .run-hud-value {
+  color: #5f6b82;
+}
+
+.run-hud-detail {
+  font-size: 0.55rem;
+  color: #5f6b82;
+}
+
+.run-hud-note {
+  margin: 0;
+  font-size: 0.58rem;
+  color: #6b7688;
+}
+
 /* ── Node inspector (M4-T4) ─────────────────────────────────────────────────
    A right-hand overlay between the boot chip (top right) and the transport
    (bottom): like the transport, it floats over the scene rather than taking

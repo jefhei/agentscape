@@ -508,6 +508,9 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       // facts, and places nothing of its own — so it must author no coordinate.
       'src/filter/filter.ts',
       'src/filter/filterTrack.ts',
+      // The run HUD (M4-T6) totals the trace's own facts — counts, a span, tokens
+      // and spend — so like the transport it emits no position at all.
+      'src/hud/hud.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')
