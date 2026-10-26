@@ -66,6 +66,7 @@
 
 import type { TraceModel } from '../model/index.ts'
 import type { LayoutBounds, Vec3 } from '../layout/index.ts'
+import type { DetailPlan, FrameWork } from '../scale/index.ts'
 import { DRAW_CALL_CEILING, measureSceneBudget } from './budget.ts'
 import type { SceneBudgetOptions, ScenePlans } from './budget.ts'
 import type { EnvironmentPlan } from './environment.ts'
@@ -177,6 +178,10 @@ export interface ScenePlan {
   environment: EnvironmentPlan
   /** What is being drawn, and the trace facts behind it. */
   counts: SceneCounts
+  /** The level-of-detail plan all four layers were composed under (M5-T1). */
+  detail: DetailPlan
+  /** The per-frame work this scene implies, measured from its own plans (M5-T1). */
+  frameWork: FrameWork
   /** The framing the shell applies to the renderer's camera. */
   camera: SceneCamera
   /** Total geometry draw calls across every layer. */
@@ -327,6 +332,8 @@ export function buildScenePlan(
     glyphs,
     environment,
     counts,
+    detail: budget.detail,
+    frameWork: budget.frameWork,
     camera: sceneCamera(environment, layout.bounds),
     drawCalls: budget.drawCalls,
     ceiling: budget.ceiling,

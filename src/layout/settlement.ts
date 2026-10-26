@@ -110,7 +110,20 @@ export interface SettlementOptions {
   idealDistance?: number
   /** Seed override; default is the model's own `seed`. */
   seed?: number
+  /**
+   * Temperature at or below which the simulation counts as **frozen** and the
+   * pass stops (`0`, the default, disables the rule). The displacement cap
+   * decays geometrically, so past this point a step moves every node by less
+   * than the floor — the shape has stopped changing even though the residual
+   * *force* may still be non-zero. `Settlement.stopReason` reports which rule
+   * ended the run, so a frozen-but-unsettled layout is never passed off as
+   * converged. The M5-T1 scale policy is the only caller that sets it.
+   */
+  temperatureFloor?: number
 }
+
+/** Why a settlement pass stopped. */
+export type SettlementStopReason = 'converged' | 'temperature-floor' | 'iteration-cap'
 
 /**
  * The outcome of a settlement: the settled {@link ForceLayout} plus the record
@@ -122,6 +135,8 @@ export interface Settlement {
   layout: ForceLayout
   /** `true` when the energy dropped to `<= energyTolerance` before the cap. */
   converged: boolean
+  /** Which rule ended the pass (a 0/1-agent run reports `converged`). */
+  stopReason: SettlementStopReason
   /** Iterations actually run (`0` for a degenerate 0/1-agent run). */
   iterations: number
   /** The iteration cap the run was bounded by. */
@@ -130,6 +145,8 @@ export interface Settlement {
   decay: number
   /** The energy threshold considered "settled". */
   energyTolerance: number
+  /** The frozen-simulation floor (`0` when the rule is off). */
+  temperatureFloor: number
   /** Residual energy after each iteration, in order (the convergence trace). */
   energyHistory: number[]
   /** Greatest node movement applied by each iteration, in order (the jitter trace). */
@@ -177,16 +194,27 @@ export function settleLayout(
 
   const state = prepareSimulation(model, options)
 
+  const temperatureFloor = Math.max(0, options.temperatureFloor ?? 0)
+
   const energyHistory: number[] = []
   const movementHistory: number[] = []
   let energy = 0
   let movement = 0
   let iterations = 0
   let converged = state.count < 2 // a 0/1-agent run is settled as it stands
+  let stopReason: SettlementStopReason = 'converged'
 
   if (state.count >= 2) {
     let temperature = state.half
+    stopReason = 'iteration-cap'
     for (let iter = 0; iter < maxIterations; iter += 1) {
+      // Frozen: the cap has decayed below the floor, so no step can move a node
+      // further than that — the shape is final even if forces remain. Checked
+      // before the step, so `iterations` counts steps that actually ran.
+      if (temperatureFloor > 0 && temperature < temperatureFloor) {
+        stopReason = 'temperature-floor'
+        break
+      }
       const step = relaxIteration(state, temperature)
       energy = step.energy
       movement = step.movement
@@ -197,6 +225,7 @@ export function settleLayout(
 
       if (energy <= energyTolerance) {
         converged = true
+        stopReason = 'converged'
         break
       }
     }
@@ -205,10 +234,12 @@ export function settleLayout(
   return {
     layout: buildLayout(state, iterations, energy),
     converged,
+    stopReason,
     iterations,
     maxIterations,
     decay,
     energyTolerance,
+    temperatureFloor,
     energyHistory,
     movementHistory,
     finalEnergy: energy,

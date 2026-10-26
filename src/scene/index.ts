@@ -236,6 +236,16 @@ export {
 
 export type { SceneCamera, SceneCounts, SceneOptions, ScenePlan } from './scenePlan.ts'
 
+// ── scale: level-of-detail and the frame budget (M5-T1) ──────────────────────
+//
+// The scene plan carries both, so a consumer (a HUD, a probe, M5-T2's report) can
+// read them off `plan.detail` / `plan.frameWork` without importing the scale
+// layer directly. Re-exported here because they are part of the scene's public
+// shape now, not an implementation detail of one layer.
+
+export { describeDetail, resolveDetailPlan } from '../scale/index.ts'
+export type { DetailPlan, DetailTier, FrameWork } from '../scale/index.ts'
+
 export { default as Scene } from './Scene.tsx'
 export type { SceneProps } from './Scene.tsx'
 

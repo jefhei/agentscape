@@ -379,3 +379,75 @@ describe('settlement — purity (M2-T2)', () => {
     expect(source).toMatch(/\bbuildLayout\b/)
   })
 })
+
+// ── the frozen-simulation floor (M5-T1) ─────────────────────────────────────
+
+describe('settleLayout — the frozen-simulation floor (M5-T1)', () => {
+  /**
+   * M5-T1 added an opt-in stop rule for scale: the displacement cap decays
+   * geometrically, so once it falls below a floor no step can move a node further
+   * than that and the shape is final — even though the residual *force* may still
+   * be non-zero. The rule must be invisible by default (M2-T2's results and pins
+   * untouched) and must report itself honestly when it fires.
+   */
+  it('is off by default and changes nothing about the M2-T2 result', () => {
+    const run = buildFixture('loop').run
+    const plain = settleLayout(run)
+    const explicitOff = settleLayout(run, { temperatureFloor: 0 })
+
+    expect(plain.temperatureFloor).toBe(0)
+    expect(explicitOff.layout).toEqual(plain.layout)
+    expect(explicitOff.stopReason).toBe(plain.stopReason)
+    expect(plain.stopReason).toBe('converged')
+  })
+
+  it('stops once the cooling cap falls below the floor, and says why', () => {
+    const run = buildFixture('loop').run
+    const floor = 1e-2
+    const settlement = settleLayout(run, { temperatureFloor: floor })
+
+    expect(settlement.stopReason).toBe('temperature-floor')
+    // Frozen is NOT settled: the residual force is still there and the report
+    // must not claim convergence.
+    expect(settlement.converged).toBe(false)
+    expect(settlement.iterations).toBeLessThan(settleLayout(run).iterations)
+    // The last executed step ran at a cap at or above the floor (the rule is
+    // checked before the step), so the largest possible move is that cap — i.e.
+    // just under `floor / decay`, and always below it.
+    expect(settlement.finalMovement).toBeGreaterThan(0)
+    expect(settlement.finalMovement).toBeLessThanOrEqual(floor / DEFAULT_DECAY)
+    expect(settlement.energyHistory).toHaveLength(settlement.iterations)
+    expect(settlement.movementHistory).toHaveLength(settlement.iterations)
+  })
+
+  it('does not pre-empt convergence when the floor is below the settled cap', () => {
+    const run = buildFixture('fan-out').run
+    const settlement = settleLayout(run, { temperatureFloor: 1e-12 })
+
+    expect(settlement.stopReason).toBe('converged')
+    expect(settlement.converged).toBe(true)
+  })
+
+  it('reports the iteration cap when neither rule fires', () => {
+    const clipped = settleLayout(buildFixture('loop').run, { maxIterations: 5 })
+
+    expect(clipped.stopReason).toBe('iteration-cap')
+    expect(clipped.converged).toBe(false)
+  })
+
+  it('reports a degenerate run as converged with no steps', () => {
+    const empty = settleLayout(modelFrom([]))
+
+    expect(empty.stopReason).toBe('converged')
+    expect(empty.iterations).toBe(0)
+  })
+
+  it('is deterministic — the same floor yields a byte-identical settlement', () => {
+    const run = buildFixture('loop').run
+    const first = settleLayout(run, { temperatureFloor: 1e-2 })
+    const second = settleLayout(run, { temperatureFloor: 1e-2 })
+
+    expect(second.layout).toEqual(first.layout)
+    expect(second.iterations).toBe(first.iterations)
+  })
+})

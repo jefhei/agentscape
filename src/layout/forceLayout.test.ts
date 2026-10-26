@@ -13,6 +13,7 @@ import {
   layoutTrace,
   positionById,
 } from './index.ts'
+import { prepareSimulation, relaxIteration } from './forceLayout.ts'
 import type { ForceLayout, LayoutLink, Vec3 } from './index.ts'
 
 /**
@@ -450,5 +451,104 @@ describe('layout — purity (M2-T1)', () => {
   it('defaults the ideal edge length to the exported constant', () => {
     expect(DEFAULT_IDEAL_DISTANCE).toBe(1)
     expect(DEFAULT_ITERATIONS).toBeGreaterThan(0)
+  })
+})
+
+// ── the force law itself (M5-T1) ────────────────────────────────────────────
+
+describe('relaxIteration — the force law is pinned analytically (M5-T1)', () => {
+  /**
+   * M5-T1 rewrote the pair loop to be allocation-free (a typed-array accumulator
+   * and one reciprocal per pair). While doing that, the exponent in `F = k²/d`
+   * was briefly mistyped as `d³` — and *every* layout test still passed, because
+   * M2 gates determinism and invariants, not the force magnitude. This block is
+   * the numeric pin that was missing: it fixes the law against a closed form, so a
+   * kernel rewrite cannot silently change the physics again.
+   */
+  it('repels two agents with Σ|F| = 2·k²/d and no attraction', () => {
+    const model = modelFrom([
+      // Two agents that only talk to themselves: self-messages add no link, and
+      // there is no broadcast, so the pair is genuinely unlinked.
+      {
+        id: 1,
+        from_agent: 'a',
+        to_agent: 'a',
+        body: null,
+        created_at: '2026-01-01T00:00:00.000Z',
+      },
+      {
+        id: 2,
+        from_agent: 'b',
+        to_agent: 'b',
+        body: null,
+        created_at: '2026-01-01T00:01:00.000Z',
+      },
+    ])
+    const state = prepareSimulation(model)
+    // Two agents that never speak: nothing is linked, so only repulsion acts.
+    expect(state.count).toBe(2)
+    expect(state.edges).toEqual([])
+    // Put the pair at a known separation.
+    state.points[0] = { x: 0, y: 0, z: 0 }
+    state.points[1] = { x: 2, y: 0, z: 0 }
+
+    const k = state.idealDistance
+    const d = 2
+    const step = relaxIteration(state, 1e9)
+
+    // Each node feels k²/d; the residual is the sum of the two magnitudes.
+    expect(step.energy).toBeCloseTo((2 * (k * k)) / d, 12)
+    // …pushing them apart symmetrically by that displacement each (the cap is
+    // larger than the force, so the full displacement applies).
+    expect(state.points[0].x).toBeCloseTo(-((k * k) / d), 12)
+    expect(state.points[1].x).toBeCloseTo(2 + (k * k) / d, 12)
+    expect(state.points[0].y).toBeCloseTo(0, 12)
+    expect(state.points[1].z).toBeCloseTo(0, 12)
+  })
+
+  it('pulls two linked agents together with F = d²/k·weight', () => {
+    const model = modelFrom([
+      {
+        id: 1,
+        from_agent: 'a',
+        to_agent: 'b',
+        body: null,
+        created_at: '2026-01-01T00:00:00.000Z',
+      },
+    ])
+    const state = prepareSimulation(model)
+    expect(state.edges).toHaveLength(1)
+    // A long separation so attraction (d²) dominates the repulsion (k²/d).
+    state.points[0] = { x: 0, y: 0, z: 0 }
+    state.points[1] = { x: 10, y: 0, z: 0 }
+
+    const k = state.idealDistance
+    const d = 10
+    const attraction = (d * d) / k // weight 1
+    const repulsion = (k * k) / d
+    const step = relaxIteration(state, 1e9)
+
+    // Two nodes, each with `attraction - repulsion` of net force toward the other.
+    expect(step.energy).toBeCloseTo(2 * (attraction - repulsion), 10)
+    expect(state.points[0].x).toBeGreaterThan(0)
+    expect(state.points[1].x).toBeLessThan(10)
+  })
+
+  it('caps every step at the temperature', () => {
+    const state = prepareSimulation(buildFixture('fan-out').run)
+    const before = state.points.map((point) => ({ ...point }))
+    const temperature = 1e-6
+
+    const step = relaxIteration(state, temperature)
+
+    expect(step.movement).toBeLessThanOrEqual(temperature + 1e-12)
+    for (let index = 0; index < before.length; index += 1) {
+      const moved = Math.sqrt(
+        (state.points[index].x - before[index].x) ** 2 +
+          (state.points[index].y - before[index].y) ** 2 +
+          (state.points[index].z - before[index].z) ** 2,
+      )
+      expect(moved).toBeLessThanOrEqual(temperature + 1e-12)
+    }
   })
 })

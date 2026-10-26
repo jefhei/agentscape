@@ -91,7 +91,7 @@
  * per-instance colour.
  */
 
-import type { AgentId, MessageId, ToolCallId } from '../types/index.ts'
+import type { AgentId, MessageId, ToolCall, ToolCallId } from '../types/index.ts'
 import { compareModelIds } from '../model/index.ts'
 import type { TraceModel } from '../model/index.ts'
 import {
@@ -113,6 +113,12 @@ import type {
 import { perpendicularOf } from './arcs.ts'
 import { ScenePlanError, composeNodeMatrix } from './nodes.ts'
 import type { Matrix16, Rgb } from './nodes.ts'
+import {
+  glyphKeepCount,
+  resolveDetailPlan,
+  settlementWithDetail,
+} from '../scale/index.ts'
+import type { DetailPlan } from '../scale/index.ts'
 
 // ── Tunables ────────────────────────────────────────────────────────────────
 
@@ -192,7 +198,12 @@ export const DEFAULT_MIN_ORBIT_HZ = 0.02
 /** Orbit rate (revolutions/second) on the busiest agent. */
 export const DEFAULT_MAX_ORBIT_HZ = 0.12
 
-/** Octahedron subdivision level for the glyph geometry (M5-T1 may lower it). */
+/**
+ * Octahedron subdivision level for the glyph geometry. `0` — the bare unit
+ * octahedron — is the minimum, and the M5-T1 level-of-detail ladder keeps it
+ * there at every tier: a glyph is a *mark*, so its cost is the instance count
+ * (which the ladder caps), not its tessellation.
+ */
 export const DEFAULT_GLYPH_DETAIL = 0
 
 /**
@@ -315,7 +326,16 @@ export interface GlyphScenePlan {
   attributes: TraceAttributes
   /** The geometry/material scalars to draw with. */
   style: GlyphSceneStyle
-  /** One glyph per tool call, in canonical order. */
+  /** The level-of-detail budget this plan was built under (M5-T1). */
+  detail: DetailPlan
+  /**
+   * How the tool-call population was cut down to the drawn set (M5-T1). `total`
+   * is the trace's tool-call count, `drawn` what this plan actually puts on the
+   * GPU, and `dropped` the difference — reported rather than hidden, so a capped
+   * scene never reads as a run with fewer calls.
+   */
+  budget: { total: number; drawn: number; cap: number; dropped: number }
+  /** One glyph per drawn tool call, in canonical order. */
   glyphs: GlyphInstance[]
   /** `glyphs.length` — the InstancedMesh count. */
   count: number
@@ -350,6 +370,12 @@ export interface GlyphSceneOptions {
   layout?: ForceLayout
   /** An attribute map to reuse instead of re-mapping (see `layout`). */
   attributeMap?: TraceAttributes
+  /**
+   * A level-of-detail plan to build under (M5-T1). Omit to resolve one from the
+   * run's own counts; the scene passes the one plan every layer shares, so a
+   * capped glyph population is the same number the scene reports.
+   */
+  detail?: DetailPlan
 }
 
 /**
@@ -606,6 +632,17 @@ export function writeGlyphMatrices(
 // ── The plan ────────────────────────────────────────────────────────────────
 
 /**
+ * Canonical order for tool calls: calling agent, then call time, then call id —
+ * a total order, so the glyph plan is byte-identical whatever order the model's
+ * arrays arrive in.
+ */
+function compareCalls(a: ToolCall, b: ToolCall): number {
+  return (
+    compareModelIds(a.agentId, b.agentId) || a.at - b.at || compareModelIds(a.id, b.id)
+  )
+}
+
+/**
  * Build the glyph-layer scene plan for a normalized {@link TraceModel}: settle
  * the layout (or reuse one), map the visual attributes (or reuse them), and
  * place one glyph per tool call on a derived orbit around the agent that made
@@ -629,7 +666,10 @@ export function buildGlyphScenePlan(
   model: TraceModel,
   options: GlyphSceneOptions = {},
 ): GlyphScenePlan {
-  const style = resolveStyle(options.style)
+  const counts = {
+    agents: model.meta.agentCount,
+    toolCalls: model.meta.toolCallCount,
+  }
 
   // Reuse a supplied layout/attribute map when there is one (the relaxation and
   // the mapping are the caller's to pay for once), otherwise derive them.
@@ -639,10 +679,18 @@ export function buildGlyphScenePlan(
     layout = options.layout
     converged = isSettled(layout, options.settlement?.energyTolerance)
   } else {
-    const settled = settleLayout(model, options.settlement)
+    // The detail budget bounds the relaxation, so it is resolved first (M5-T1).
+    const budget = options.detail ?? resolveDetailPlan(counts)
+    const settled = settleLayout(
+      model,
+      settlementWithDetail(budget, options.settlement),
+    )
     layout = settled.layout
     converged = settled.converged
   }
+  const detail =
+    options.detail ?? resolveDetailPlan({ ...counts, links: layout.links.length })
+  const style = resolveStyle(options.style)
   const attributes =
     options.attributeMap ?? mapTraceAttributes(model, options.attributes)
 
@@ -667,12 +715,22 @@ export function buildGlyphScenePlan(
   // Canonical order: by calling agent, then call time, then call id — a total
   // order, so the plan is byte-identical whatever order the model's arrays
   // arrive in. Grouping by agent makes the ring/slot assignment below obvious.
-  const calls = [...model.toolCalls].sort(
-    (a, b) =>
-      compareModelIds(a.agentId, b.agentId) ||
-      a.at - b.at ||
-      compareModelIds(a.id, b.id),
-  )
+  const ordered = [...model.toolCalls].sort(compareCalls)
+
+  // Level of detail (M5-T1): when the run has more calls than the layer's budget,
+  // keep the most RECENT ones. A live run's tail is what a viewer is watching,
+  // and 40k orbiting marks around 1200 nodes read as noise; the canonical
+  // re-sort below keeps the plan's own order contract. The drop is reported on
+  // `plan.budget`, never silently absorbed.
+  const { keep, dropped } = glyphKeepCount(ordered.length, detail.glyphs.max)
+  const calls =
+    dropped === 0
+      ? ordered
+      : ordered
+          .slice()
+          .sort((a, b) => a.at - b.at || compareModelIds(a.id, b.id))
+          .slice(ordered.length - keep)
+          .sort(compareCalls)
 
   const seenByAgent = new Map<AgentId, number>()
   const glyphs: GlyphInstance[] = calls.map((call) => {
@@ -739,6 +797,13 @@ export function buildGlyphScenePlan(
     layout,
     attributes,
     style,
+    detail,
+    budget: {
+      total: ordered.length,
+      drawn: glyphs.length,
+      cap: detail.glyphs.max,
+      dropped: ordered.length - glyphs.length,
+    },
     glyphs,
     count: glyphs.length,
     // An empty layer draws nothing, so it costs nothing.

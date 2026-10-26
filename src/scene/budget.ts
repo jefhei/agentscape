@@ -60,8 +60,12 @@
  */
 
 import type { TraceModel } from '../model/index.ts'
-import { mapTraceAttributes, settleLayout } from '../layout/index.ts'
+import { deriveLayoutLinks, mapTraceAttributes, settleLayout } from '../layout/index.ts'
 import type { AttributeOptions, SettlementOptions } from '../layout/index.ts'
+import { resolveDetailPlan, settlementWithDetail } from '../scale/index.ts'
+import type { DetailPlan } from '../scale/index.ts'
+import { measureFrameWork } from '../scale/index.ts'
+import type { FrameWork } from '../scale/index.ts'
 import { NODE_LAYER_DRAW_CALLS, buildNodeScenePlan } from './nodes.ts'
 import type { NodeScenePlan, NodeSceneStyle } from './nodes.ts'
 import { ARC_LAYER_DRAW_CALLS, buildArcScenePlan } from './arcs.ts'
@@ -144,6 +148,10 @@ export interface SceneBudget {
   layers: LayerBudget[]
   /** The plans the measurement built, in case a caller wants to draw them. */
   plans: ScenePlans
+  /** The level-of-detail plan every layer of this scene was built under (M5-T1). */
+  detail: DetailPlan
+  /** The per-frame work this scene implies, measured from its own plans (M5-T1). */
+  frameWork: FrameWork
   /** Total geometry draw calls across every layer. */
   drawCalls: number
   /**
@@ -197,6 +205,12 @@ export interface SceneBudgetOptions {
   calibration?: CalibrationOverrides
   /** A tighter or looser ceiling than {@link DRAW_CALL_CEILING} (sanitized). */
   ceiling?: number
+  /**
+   * A level-of-detail plan to compose the scene under (M5-T1). Omit to resolve one
+   * from the run's own counts — one plan for the whole scene, so all four layers
+   * are drawn at exactly the detail the measurement reports.
+   */
+  detail?: DetailPlan
 }
 
 // ── The measurement ─────────────────────────────────────────────────────────
@@ -230,10 +244,20 @@ export function measureSceneBudget(
   options: SceneBudgetOptions = {},
 ): SceneBudget {
   // One scene pass: settle once, map once, and hand both to every layer.
-  const settled = settleLayout(model, options.settlement)
+  // The level-of-detail plan is resolved first (M5-T1) because it bounds the
+  // settlement, and it is handed to every layer so the scene is drawn at exactly
+  // the detail it is measured at.
+  const detail =
+    options.detail ??
+    resolveDetailPlan({
+      agents: model.meta.agentCount,
+      links: deriveLayoutLinks(model).length,
+      toolCalls: model.meta.toolCallCount,
+    })
+  const settled = settleLayout(model, settlementWithDetail(detail, options.settlement))
   const layout = settled.layout
   const attributeMap = mapTraceAttributes(model, options.attributes)
-  const shared = { settlement: options.settlement, layout, attributeMap }
+  const shared = { settlement: options.settlement, layout, attributeMap, detail }
 
   const nodes = buildNodeScenePlan(model, { ...shared, style: options.nodeStyle })
   const arcs = buildArcScenePlan(model, { ...shared, style: options.arcStyle })
@@ -279,9 +303,22 @@ export function measureSceneBudget(
   const elements = layers.reduce((total, layer) => total + layer.elements, 0)
   const ceiling = resolveCeiling(options.ceiling)
 
+  const frameWork = measureFrameWork({
+    counts: {
+      nodes: nodes.count,
+      arcs: arcs.count,
+      glyphs: glyphs.count,
+      arcVertices: arcs.vertexCount,
+    },
+    drawCalls,
+    postProcessPasses: environment.postProcessPasses,
+  })
+
   return {
     layers,
     plans: { nodes, arcs, glyphs, environment },
+    detail,
+    frameWork,
     drawCalls,
     postProcessPasses: environment.postProcessPasses,
     elements,

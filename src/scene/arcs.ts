@@ -95,6 +95,8 @@ import type {
 } from '../layout/index.ts'
 import { ScenePlanError } from './nodes.ts'
 import type { Rgb } from './nodes.ts'
+import { resolveDetailPlan, settlementWithDetail } from '../scale/index.ts'
+import type { DetailPlan } from '../scale/index.ts'
 
 // ── Tunables ────────────────────────────────────────────────────────────────
 
@@ -328,6 +330,8 @@ export interface ArcScenePlan {
   attributes: TraceAttributes
   /** The geometry/material scalars to draw with. */
   style: ArcSceneStyle
+  /** The level-of-detail budget this plan was built under (M5-T1). */
+  detail: DetailPlan
   /** One arc per communication link, in the layout's canonical link order. */
   arcs: ArcInstance[]
   /** The batched geometry for every arc: one upload, one draw call. */
@@ -369,6 +373,11 @@ export interface ArcSceneOptions {
   layout?: ForceLayout
   /** An attribute map to reuse instead of re-mapping (see `layout`). */
   attributeMap?: TraceAttributes
+  /**
+   * A level-of-detail plan to build under (M5-T1). Omit to resolve one from the
+   * run's counted links — the scene passes the one plan every layer shares.
+   */
+  detail?: DetailPlan
 }
 
 // ── Vector helpers (plain numbers — no three.js here) ───────────────────────
@@ -543,7 +552,10 @@ function color(value: Rgb | undefined, fallback: Rgb): Rgb {
  * so the shader's `smoothstep` cannot divide by zero. Fresh tuples are returned
  * each call (no shared mutable state).
  */
-function resolveStyle(overrides: Partial<ArcSceneStyle> | undefined): ArcSceneStyle {
+function resolveStyle(
+  overrides: Partial<ArcSceneStyle> | undefined,
+  detail: DetailPlan,
+): ArcSceneStyle {
   const minPulseHz = component(overrides?.minPulseHz, DEFAULT_MIN_PULSE_HZ)
   const maxPulseHz = component(overrides?.maxPulseHz, DEFAULT_MAX_PULSE_HZ)
   return {
@@ -551,9 +563,9 @@ function resolveStyle(overrides: Partial<ArcSceneStyle> | undefined): ArcSceneSt
     pulseColor: color(overrides?.pulseColor, DEFAULT_ARC_PULSE_COLOR),
     segments: Math.max(
       1,
-      Math.floor(component(overrides?.segments, DEFAULT_ARC_SEGMENTS)),
+      Math.floor(component(overrides?.segments, detail.arc.segments)),
     ),
-    sides: Math.max(3, Math.floor(component(overrides?.sides, DEFAULT_ARC_SIDES))),
+    sides: Math.max(3, Math.floor(component(overrides?.sides, detail.arc.sides))),
     bulge: component(overrides?.bulge, DEFAULT_ARC_BULGE),
     pulseWidth: Math.max(
       MIN_PULSE_WIDTH,
@@ -819,7 +831,11 @@ export function buildArcScenePlan(
   model: TraceModel,
   options: ArcSceneOptions = {},
 ): ArcScenePlan {
-  const style = resolveStyle(options.style)
+  // Counts the detail ladders are keyed on; links come from the settled graph.
+  const counts = {
+    agents: model.meta.agentCount,
+    toolCalls: model.meta.toolCallCount,
+  }
 
   // Reuse a supplied layout/attribute map when there is one (the relaxation and
   // the mapping are the caller's to pay for once), otherwise derive them.
@@ -829,10 +845,18 @@ export function buildArcScenePlan(
     layout = options.layout
     converged = isSettled(layout, options.settlement?.energyTolerance)
   } else {
-    const settled = settleLayout(model, options.settlement)
+    // The detail budget bounds the relaxation, so it is resolved first (M5-T1).
+    const budget = options.detail ?? resolveDetailPlan(counts)
+    const settled = settleLayout(
+      model,
+      settlementWithDetail(budget, options.settlement),
+    )
     layout = settled.layout
     converged = settled.converged
   }
+  const detail =
+    options.detail ?? resolveDetailPlan({ ...counts, links: layout.links.length })
+  const style = resolveStyle(options.style, detail)
   const attributes =
     options.attributeMap ?? mapTraceAttributes(model, options.attributes)
 
@@ -914,6 +938,7 @@ export function buildArcScenePlan(
     layout,
     attributes,
     style,
+    detail,
     arcs,
     buffers,
     count: arcs.length,

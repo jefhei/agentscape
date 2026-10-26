@@ -74,6 +74,8 @@ import type {
 import { DEFAULT_EMISSIVE_CALIBRATION, glowColor, glowRadiance } from './environment.ts'
 import type { EmissiveCalibration } from './environment.ts'
 import type { Rgb } from './color.ts'
+import { resolveDetailPlan, settlementWithDetail } from '../scale/index.ts'
+import type { DetailPlan } from '../scale/index.ts'
 
 export type { Rgb } from './color.ts'
 
@@ -96,9 +98,12 @@ export const DEFAULT_BASE_COLOR: Rgb = [0.62, 0.82, 1]
 export const DEFAULT_EMISSIVE_INTENSITY = 1
 
 /**
- * Sphere geometry width/height segments. Low enough to stay cheap for thousands
- * of instances, high enough that a lone node does not read as a faceted blob;
- * M5-T1 (level-of-detail) may lower it for scale.
+ * Sphere geometry width/height segments at **full detail** — the M5-T1
+ * level-of-detail ladder (`src/scale/lod.ts`) lowers it for larger agent
+ * populations (12 segments at ~400 agents, 8 above 1.5k), because a 24×24 sphere
+ * is ~1.1k triangles per node and a 1200-node scene would spend most of its
+ * vertex budget on spheres a few pixels wide. This constant is what the full
+ * tier resolves to, and what every M1–M4 scene pin was built with.
  */
 export const DEFAULT_SEGMENTS = 24
 
@@ -142,7 +147,11 @@ export interface NodeSceneStyle {
   baseColor: Rgb
   /** Gain on the calibrated glow (`1` = the calibration's own reading). */
   emissiveIntensity: number
-  /** Sphere geometry width/height segments. */
+  /**
+   * Sphere geometry width/height segments. Defaults to the M5-T1 level-of-detail
+   * ladder's budget for the run's agent count ({@link resolveDetailPlan}), so a
+   * 1200-agent scene does not pay 24×24 spheres for nodes a few pixels wide.
+   */
   segments: number
   /** The M3-T4 emissive calibration the per-instance radiance is solved with. */
   calibration: EmissiveCalibration
@@ -194,6 +203,8 @@ export interface NodeScenePlan {
   attributes: TraceAttributes
   /** The geometry/material scalars to draw with. */
   style: NodeSceneStyle
+  /** The level-of-detail budget this plan was built under (M5-T1). */
+  detail: DetailPlan
   /** One instance per agent, in canonical (id-sorted) order. */
   instances: NodeInstance[]
   /** `instances.length` — the InstancedMesh count. */
@@ -227,6 +238,12 @@ export interface NodeSceneOptions {
   layout?: ForceLayout
   /** An attribute map to reuse instead of re-mapping (see `layout`). */
   attributeMap?: TraceAttributes
+  /**
+   * A level-of-detail plan to build under (M5-T1). Omit to resolve one from the
+   * run's own counts — the scene passes the one plan every layer shares, so the
+   * scene is drawn at exactly the detail it was measured at.
+   */
+  detail?: DetailPlan
 }
 
 /**
@@ -257,7 +274,10 @@ function component(value: number | undefined, fallback: number): number {
  * the default, so a bad override can never put `NaN` into an instance matrix's
  * sibling colour. A fresh tuple is returned each call (no shared mutable state).
  */
-function resolveStyle(overrides: Partial<NodeSceneStyle> | undefined): NodeSceneStyle {
+function resolveStyle(
+  overrides: Partial<NodeSceneStyle> | undefined,
+  detail: DetailPlan,
+): NodeSceneStyle {
   const provided = overrides?.baseColor
   const baseColor: Rgb = [
     component(provided?.[0], DEFAULT_BASE_COLOR[0]),
@@ -270,7 +290,10 @@ function resolveStyle(overrides: Partial<NodeSceneStyle> | undefined): NodeScene
       overrides?.emissiveIntensity,
       DEFAULT_EMISSIVE_INTENSITY,
     ),
-    segments: Math.max(3, Math.floor(component(overrides?.segments, DEFAULT_SEGMENTS))),
+    segments: Math.max(
+      3,
+      Math.floor(component(overrides?.segments, detail.node.segments)),
+    ),
     calibration: overrides?.calibration ?? DEFAULT_EMISSIVE_CALIBRATION,
   }
 }
@@ -318,7 +341,13 @@ export function buildNodeScenePlan(
   model: TraceModel,
   options: NodeSceneOptions = {},
 ): NodeScenePlan {
-  const style = resolveStyle(options.style)
+  // The counts the detail ladders are keyed on. Agents and tool calls are facts
+  // on the run; links are a property of the settled graph, so they are read
+  // after the settlement below.
+  const counts = {
+    agents: model.meta.agentCount,
+    toolCalls: model.meta.toolCallCount,
+  }
 
   // Reuse a supplied layout/attribute map when there is one (the relaxation and
   // the mapping are the caller's to pay for once), otherwise derive them.
@@ -328,10 +357,18 @@ export function buildNodeScenePlan(
     layout = options.layout
     converged = isSettled(layout, options.settlement?.energyTolerance)
   } else {
-    const settled = settleLayout(model, options.settlement)
+    // The detail budget bounds the relaxation, so it is resolved first (M5-T1).
+    const budget = options.detail ?? resolveDetailPlan(counts)
+    const settled = settleLayout(
+      model,
+      settlementWithDetail(budget, options.settlement),
+    )
     layout = settled.layout
     converged = settled.converged
   }
+  const detail =
+    options.detail ?? resolveDetailPlan({ ...counts, links: layout.links.length })
+  const style = resolveStyle(options.style, detail)
   const attributes =
     options.attributeMap ?? mapTraceAttributes(model, options.attributes)
 
@@ -373,6 +410,7 @@ export function buildNodeScenePlan(
     layout,
     attributes,
     style,
+    detail,
     instances,
     count: instances.length,
     // An empty layer draws nothing, so it costs nothing.
