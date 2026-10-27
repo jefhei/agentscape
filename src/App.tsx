@@ -5,7 +5,9 @@ import type { FixtureShape } from './fixtures/index.ts'
 import { useFilter } from './filter/index.ts'
 import { buildRunSummary } from './hud/index.ts'
 import { useSelection } from './inspect/index.ts'
+import type { TraceModel } from './model/index.ts'
 import { usePlayback } from './playback/index.ts'
+import { scaleTraceRun } from './scale/index.ts'
 import AgentDetailPanel from './ui/AgentDetailPanel.tsx'
 import FilterBar from './ui/FilterBar.tsx'
 import RunHud from './ui/RunHud.tsx'
@@ -28,6 +30,23 @@ const DEFAULT_FIXTURE: FixtureShape = 'fan-out'
 
 /** The run the app mounts — built through the real ingest path (M1-T4 + M1-T5). */
 export const MOUNTED_RUN = buildFixture(DEFAULT_FIXTURE).run
+
+/**
+ * The run to mount for the current URL (M5-T2's profiling affordance).
+ *
+ * `?trace=scale:2000` mounts a synthetic run of that size; anything else — the
+ * normal case, and every mistyped URL — mounts {@link MOUNTED_RUN}. The parse is
+ * the pure `parseScaleTrace`, so this function only chooses between two runs and
+ * owns no rule of its own; the profiling report needs it because a 1–2k-node
+ * scene cannot be measured in the app if the app cannot be asked to mount one.
+ */
+function resolveMountedRun(): TraceModel {
+  if (typeof window !== 'undefined') {
+    const scaled = scaleTraceRun(window.location.search)
+    if (scaled !== null) return scaled.run
+  }
+  return MOUNTED_RUN
+}
 
 /**
  * AgentScape app shell (M1-T1): header + 3D viewport + playback transport.
@@ -64,13 +83,17 @@ export const MOUNTED_RUN = buildFixture(DEFAULT_FIXTURE).run
  * the filter bar reports the lens, and only the HUD describes the trace itself.
  */
 export default function App() {
-  const playback = usePlayback(MOUNTED_RUN)
-  const selection = useSelection(MOUNTED_RUN)
-  const filter = useFilter(MOUNTED_RUN)
+  // The mounted run (M5-T2): the default fixture, unless the URL asked for a
+  // synthetic scale run. Resolved once — a URL is not state that can change
+  // under a mount, and every child takes the run by reference.
+  const run = useMemo(resolveMountedRun, [])
+  const playback = usePlayback(run)
+  const selection = useSelection(run)
+  const filter = useFilter(run)
   // The HUD's summary (M4-T6) is a pure function of the run, derived once for the
   // life of the mount — outside React state on purpose: it must not move with the
   // playhead or the lens, and there is nothing to invalidate it.
-  const summary = useMemo(() => buildRunSummary(MOUNTED_RUN), [])
+  const summary = useMemo(() => buildRunSummary(run), [run])
 
   return (
     <div className="app">
@@ -82,7 +105,7 @@ export default function App() {
       </header>
       <main className="app-main">
         <Viewport
-          run={MOUNTED_RUN}
+          run={run}
           frame={playback.frame}
           selectedAgentId={selection.agentId}
           onSelectAgent={selection.toggle}
@@ -90,7 +113,7 @@ export default function App() {
         />
         <RunHud summary={summary} />
         <FilterBar
-          agents={MOUNTED_RUN.agents}
+          agents={run.agents}
           view={filter.view}
           onToggleAgent={filter.toggleAgent}
           onIsolateAgent={filter.isolateAgent}
@@ -104,7 +127,7 @@ export default function App() {
           onAction={playback.dispatch}
         />
         <AgentDetailPanel
-          run={MOUNTED_RUN}
+          run={run}
           agentId={selection.agentId}
           elapsedMs={playback.frame.elapsedMs}
           onClose={selection.clear}

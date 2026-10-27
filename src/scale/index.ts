@@ -49,3 +49,40 @@ export {
   scaleHubIndex,
 } from './scaleRun.ts'
 export type { ScaleRun, ScaleRunOptions } from './scaleRun.ts'
+
+export {
+  SCALE_TRACE_SCHEME,
+  SCALE_TRACE_PARAM,
+  SCALE_MESSAGES_PARAM,
+  DEFAULT_MESSAGES_PER_AGENT,
+  MAX_SCALE_AGENTS,
+  MAX_MESSAGES_PER_AGENT,
+  parseScaleTrace,
+  scaleTraceRun,
+} from './scaleQuery.ts'
+export type { ScaleTraceRequest } from './scaleQuery.ts'
+
+export {
+  PROFILE_FRAME_BUDGET_MS,
+  PROFILE_VERDICT_PERCENTILE,
+  ProfileError,
+  summarizeFrameSamples,
+  medianCost,
+  measuredFrameCostMs,
+  costBreakdownMs,
+  buildProfileReport,
+  renderProfileMarkdown,
+  describeProfile,
+} from './profile.ts'
+export type {
+  FrameStats,
+  WriteLoop,
+  ProfileCosts,
+  ProfileDetail,
+  ProfileReport,
+  ProfileReportInput,
+  ProfileScene,
+  ProfileSceneCounts,
+  ProfileSceneReading,
+  ProfileTarget,
+} from './profile.ts'

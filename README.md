@@ -164,7 +164,19 @@ export never recorded is **reported as missing, not zeroed** — v1's
 with a note instead of claiming a free run. Every count is re-derived and checked
 against the run's own `RunMeta`, so a summary that contradicts its scene throws
 rather than rendering.
-Next: **M5-T1 — Scale to 1–2k nodes via instancing + level-of-detail; measure frame budget**
+The scale landing (M5-T1) is in [`src/scale/`](src/scale/lod.ts) — `resolveDetailPlan`
+turns the trace's counts into per-layer level-of-detail budgets (sphere segments, arc
+tessellation, a glyph cap, a relaxation pair budget), so the scene degrades by element
+cost rather than by draw call; `measureFrameWork` prices the per-frame writes and
+`buildScaleRun` builds a deterministic 1–2k-agent run through the real ingest path. The
+frame-budget report (M5-T2) is [`docs/frame-budget.md`](docs/frame-budget.md), generated
+by `scripts/profile-frame-budget.mjs` from **measured** numbers: per-unit write costs
+timed on the loops the render layer runs, ingest/plan wall time, and real browser
+`requestAnimationFrame` deltas at 6 / 250 / 1000 / 2000 nodes. Its pure half is
+[`src/scale/`](src/scale/profile.ts) (percentiles, cost pricing, the markdown report);
+`?trace=scale:2000` mounts a synthetic scale run in the app so the browser half can be
+measured against the real scene.
+Next: **M5-T3 — Render the real `debian2_bot` fleet run from an `agent_messages` export (dogfood)**
 (M5-T5, the visual review loop, is human-held: the automated build skips it).
 
 ## Stack
@@ -178,6 +190,7 @@ three 0.185 · Zustand
 
 - [`PRD.md`](PRD.md) — product requirements (idea 178)
 - [`BUILD_PLAN.md`](BUILD_PLAN.md) — the task plan and the verification gate
+- [`docs/frame-budget.md`](docs/frame-budget.md) — the measured frame-budget report (M5-T2)
 - `.hermes/status.json` — current task/milestone (read this first)
 
 ## Architecture in one line
@@ -212,6 +225,8 @@ npm run verify   # the full gate: lint + format + typecheck + test + build
 | `npm run test:watch` | vitest, watch mode |
 | `npm run preview` | serve the last production build |
 | `npm run verify` | **the gate** — lint → format:check → typecheck → test → build |
+| `npm run profile:frames` | sample browser frame times for the report (needs `npm run preview` up) |
+| `npm run profile` | regenerate `docs/frame-budget.md` from the measured frame samples |
 
 The gate's wiring is itself tested (`src/gate.test.ts`): dropping a step, flipping `test`
 to watch mode, or letting lint stop failing on warnings trips that test rather than

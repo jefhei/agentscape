@@ -226,3 +226,36 @@ describe('App shell (M1-T1)', () => {
     expect(hud).toHaveAttribute('data-messages', String(MOUNTED_RUN.meta.messageCount))
   })
 })
+
+describe('App shell — the URL-selected scale run (M5-T2)', () => {
+  /** Run `body` with the page URL set to `search`, restoring it afterwards. */
+  function atUrl(search: string, body: () => void): void {
+    window.history.replaceState({}, '', `/${search}`)
+    try {
+      body()
+    } finally {
+      window.history.replaceState({}, '', '/')
+    }
+  }
+
+  it('mounts the synthetic run a scale URL asks for', () => {
+    atUrl('?trace=scale:4', () => {
+      render(<App />)
+      // The run is built through the real ingest path, so the HUD reports it.
+      expect(screen.getByTestId('run-hud-title')).toHaveTextContent('scale:4 agents')
+      expect(screen.getByTestId('run-hud')).toHaveAttribute('data-agents', '4')
+      expect(screen.getByTestId('run-hud')).toHaveAttribute('data-messages', '7')
+    })
+  })
+
+  it('mounts the default fixture for a URL it does not understand', () => {
+    atUrl('?trace=file:run.json', () => {
+      render(<App />)
+      expect(screen.getByTestId('run-hud-title')).toHaveTextContent('fixture: Fan-out')
+      expect(screen.getByTestId('run-hud')).toHaveAttribute(
+        'data-agents',
+        String(MOUNTED_RUN.meta.agentCount),
+      )
+    })
+  })
+})

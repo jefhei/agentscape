@@ -511,6 +511,15 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       // The run HUD (M4-T6) totals the trace's own facts — counts, a span, tokens
       // and spend — so like the transport it emits no position at all.
       'src/hud/hud.ts',
+      // The scale layer (M5-T1/T2): the level-of-detail ladder reads counts, the
+      // frame-work measurement prices writes, the synthetic run derives its rows
+      // from the agent index, and the profiling report formats samples — none of
+      // them places anything in space.
+      'src/scale/lod.ts',
+      'src/scale/frameWork.ts',
+      'src/scale/scaleRun.ts',
+      'src/scale/profile.ts',
+      'src/scale/scaleQuery.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')
