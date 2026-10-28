@@ -7,7 +7,7 @@ import { buildRunSummary } from './hud/index.ts'
 import { useSelection } from './inspect/index.ts'
 import type { TraceModel } from './model/index.ts'
 import { usePlayback } from './playback/index.ts'
-import { scaleTraceRun } from './scale/index.ts'
+import { mountTrace } from './trace/index.ts'
 import AgentDetailPanel from './ui/AgentDetailPanel.tsx'
 import FilterBar from './ui/FilterBar.tsx'
 import RunHud from './ui/RunHud.tsx'
@@ -32,18 +32,19 @@ const DEFAULT_FIXTURE: FixtureShape = 'fan-out'
 export const MOUNTED_RUN = buildFixture(DEFAULT_FIXTURE).run
 
 /**
- * The run to mount for the current URL (M5-T2's profiling affordance).
+ * The run to mount for the current URL (M5-T2's profiling affordance, M5-T3's
+ * dogfood).
  *
- * `?trace=scale:2000` mounts a synthetic run of that size; anything else — the
- * normal case, and every mistyped URL — mounts {@link MOUNTED_RUN}. The parse is
- * the pure `parseScaleTrace`, so this function only chooses between two runs and
- * owns no rule of its own; the profiling report needs it because a 1–2k-node
- * scene cannot be measured in the app if the app cannot be asked to mount one.
+ * `?trace=scale:2000` mounts a synthetic run of that size, `?trace=fleet` mounts
+ * the real `debian2_bot` export snapshot; anything else — the normal case, and
+ * every mistyped URL — mounts {@link MOUNTED_RUN}. The choice itself belongs to
+ * the pure `mountTrace` (one parser, both schemes), so this function only picks
+ * the default when the URL asked for nothing.
  */
 function resolveMountedRun(): TraceModel {
   if (typeof window !== 'undefined') {
-    const scaled = scaleTraceRun(window.location.search)
-    if (scaled !== null) return scaled.run
+    const mounted = mountTrace(window.location.search)
+    if (mounted !== null) return mounted.run
   }
   return MOUNTED_RUN
 }

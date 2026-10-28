@@ -519,7 +519,12 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       'src/scale/frameWork.ts',
       'src/scale/scaleRun.ts',
       'src/scale/profile.ts',
-      'src/scale/scaleQuery.ts',
+      // The trace-selection seam (M5-T2/T3) chooses WHICH run is mounted; the
+      // real-export loader (M5-T3) turns recorded rows into a run through the
+      // adapter and the normalizer. Neither decides where anything goes — the
+      // scene layer does, from the trace's own facts.
+      'src/trace/traceQuery.ts',
+      'src/fixtures/real/fleetExport.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')

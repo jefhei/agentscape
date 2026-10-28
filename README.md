@@ -176,8 +176,20 @@ timed on the loops the render layer runs, ingest/plan wall time, and real browse
 [`src/scale/`](src/scale/profile.ts) (percentiles, cost pricing, the markdown report);
 `?trace=scale:2000` mounts a synthetic scale run in the app so the browser half can be
 measured against the real scene.
-Next: **M5-T3 — Render the real `debian2_bot` fleet run from an `agent_messages` export (dogfood)**
-(M5-T5, the visual review loop, is human-held: the automated build skips it).
+The dogfood run (M5-T3) is the first **real** trace: the `debian2_bot` pipeline's own
+`agent_messages` table, captured to
+[`src/fixtures/real/debian2-fleet.export.json`](src/fixtures/real/debian2-fleet.export.json)
+by `scripts/capture-fleet-export.mjs` (credential values, key-shaped strings and home
+paths redacted, everything else verbatim) and loaded through the same adapter +
+normalizer a user's export takes — 158 rows, 10 agents, 118 tool calls, 136 days.
+`?trace=fleet` mounts it; `src/trace/` owns the one `?trace=` parser both schemes share.
+What it renders, what it costs and the seven defects the dogfood exposed (bloom
+saturation, ten-times-too-wide framing, an empty hierarchy, identity fragmentation, …)
+are written down in [`docs/fleet-run.md`](docs/fleet-run.md) with two screenshots.
+Next: **M5-T4 — Implement and demonstrate the spatial-insight criterion vs a timeline
+(fan-out + runaway loop)** — the product-bet gate; M5-T3's findings feed it. Then M6-T1
+(localStorage autosave). (M5-T5, the visual review loop, is human-held: the automated
+build skips it and records no verdict.)
 
 ## Stack
 
@@ -191,6 +203,7 @@ three 0.185 · Zustand
 - [`PRD.md`](PRD.md) — product requirements (idea 178)
 - [`BUILD_PLAN.md`](BUILD_PLAN.md) — the task plan and the verification gate
 - [`docs/frame-budget.md`](docs/frame-budget.md) — the measured frame-budget report (M5-T2)
+- [`docs/fleet-run.md`](docs/fleet-run.md) — the real `debian2_bot` fleet run and what the dogfood found (M5-T3)
 - `.hermes/status.json` — current task/milestone (read this first)
 
 ## Architecture in one line

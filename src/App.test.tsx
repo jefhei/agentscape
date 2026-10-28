@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import App, { MOUNTED_RUN } from './App'
+import { FLEET_RUN } from './fixtures/real/index.ts'
 import { buildRunSummary } from './hud/index.ts'
 import { DRAW_CALL_CEILING } from './scene/index.ts'
 
@@ -245,6 +246,26 @@ describe('App shell — the URL-selected scale run (M5-T2)', () => {
       expect(screen.getByTestId('run-hud-title')).toHaveTextContent('scale:4 agents')
       expect(screen.getByTestId('run-hud')).toHaveAttribute('data-agents', '4')
       expect(screen.getByTestId('run-hud')).toHaveAttribute('data-messages', '7')
+    })
+  })
+
+  it('mounts the real fleet run a `?trace=fleet` URL asks for (M5-T3)', () => {
+    atUrl('?trace=fleet', () => {
+      render(<App />)
+      // The dogfood run, built from the committed export snapshot through the
+      // real ingest path — the HUD reads the run's own facts.
+      expect(screen.getByTestId('run-hud-title')).toHaveTextContent(FLEET_RUN.label)
+      expect(screen.getByTestId('run-hud')).toHaveAttribute(
+        'data-agents',
+        String(FLEET_RUN.meta.agentCount),
+      )
+      expect(screen.getByTestId('run-hud')).toHaveAttribute('data-messages', '158')
+      // And it reached the renderer: the viewport's run id is the fleet run's.
+      expect(screen.getByTestId('viewport')).toHaveAttribute(
+        'data-run-id',
+        FLEET_RUN.id,
+      )
+      expect(screen.getByTestId('viewport')).toHaveAttribute('data-draw-calls', '3')
     })
   })
 
