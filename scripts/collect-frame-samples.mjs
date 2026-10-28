@@ -19,7 +19,7 @@
  * so; this script only measures.
  *
  * Every scene navigates to `/?trace=scale:<n>` — the URL seam M5-T2 added
- * (`src/scale/scaleQuery.ts`) — so what is measured is the real app mounting a
+ * (`src/trace/traceQuery.ts`) — so what is measured is the real app mounting a
  * real 1–2k-node scene, not a benchmark harness that merely resembles it.
  */
 
