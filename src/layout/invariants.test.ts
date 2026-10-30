@@ -525,6 +525,13 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       // scene layer does, from the trace's own facts.
       'src/trace/traceQuery.ts',
       'src/fixtures/real/fleetExport.ts',
+      'src/fixtures/real/fleetRows.ts',
+      // The insight layer (M5-T4) reads the drawn channels — which agents
+      // addressed which, how the traffic leans — and prices each fact; it places
+      // nothing and draws nothing, so it must author no coordinate either.
+      'src/insight/facts.ts',
+      'src/insight/access.ts',
+      'src/insight/report.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')

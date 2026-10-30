@@ -1,0 +1,3242 @@
+{
+  "generatedAt": "2026-10-30",
+  "criterion": {
+    "minFacts": 2,
+    "minRowRatio": 4
+  },
+  "referenceRunIds": [
+    "run_619a61f6",
+    "run_e55bfefa"
+  ],
+  "reports": [
+    {
+      "runId": "run_619a61f6",
+      "label": "fixture: Fan-out",
+      "facts": {
+        "runId": "run_619a61f6",
+        "facts": [
+          {
+            "kind": "fan-out",
+            "question": "Which agent has the widest fan-out, and how many agents does it drive?",
+            "answer": "a_orchestrator — 5 agents put to work, from 5 drawn channels (all one-way)",
+            "short": "a_orchestrator · 5",
+            "agentIds": [
+              "a_orchestrator"
+            ],
+            "supported": true,
+            "reason": null,
+            "evidence": {
+              "kind": "fan-out",
+              "basis": "spawn",
+              "ranking": [
+                {
+                  "agentId": "a_orchestrator",
+                  "reach": 5,
+                  "directedReach": 5,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 5,
+                  "netIn": 0,
+                  "balanced": 0,
+                  "spokes": 5,
+                  "childIds": [
+                    "a_worker_alpha",
+                    "a_worker_beta",
+                    "a_worker_delta",
+                    "a_worker_epsilon",
+                    "a_worker_gamma"
+                  ]
+                },
+                {
+                  "agentId": "a_worker_alpha",
+                  "reach": 0,
+                  "directedReach": 0,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 1,
+                  "balanced": 0,
+                  "spokes": 1,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_worker_beta",
+                  "reach": 0,
+                  "directedReach": 0,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 1,
+                  "balanced": 0,
+                  "spokes": 1,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_worker_delta",
+                  "reach": 0,
+                  "directedReach": 0,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 1,
+                  "balanced": 0,
+                  "spokes": 1,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_worker_epsilon",
+                  "reach": 0,
+                  "directedReach": 0,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 1,
+                  "balanced": 0,
+                  "spokes": 1,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_worker_gamma",
+                  "reach": 0,
+                  "directedReach": 0,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 1,
+                  "balanced": 0,
+                  "spokes": 1,
+                  "childIds": []
+                }
+              ],
+              "topAgentId": "a_orchestrator",
+              "topFanOut": 5,
+              "topSpokes": 5,
+              "topReach": 5,
+              "topBroadcastsSent": 0,
+              "topBroadcastReach": 0,
+              "topOneWay": true,
+              "fannedAgents": 1
+            }
+          },
+          {
+            "kind": "loop",
+            "question": "Is a pair still going round — a sub-agent loop that never settled?",
+            "answer": "No loop: no pair exchanges messages in both directions.",
+            "short": "no loop",
+            "agentIds": [],
+            "supported": false,
+            "reason": "No pair exchanges messages in both directions.",
+            "evidence": {
+              "kind": "loop",
+              "pairs": [],
+              "reciprocating": 0,
+              "loops": 0,
+              "endsInsideLoop": false,
+              "busiestPair": null
+            }
+          },
+          {
+            "kind": "imbalance",
+            "question": "Where does the run’s traffic concentrate — one agent, or one channel?",
+            "answer": "a_orchestrator carries 67% of the run’s activity (10 of 15), 10× the next agent",
+            "short": "a_orchestrator · 67% of activity",
+            "agentIds": [
+              "a_orchestrator"
+            ],
+            "supported": true,
+            "reason": null,
+            "evidence": {
+              "kind": "imbalance",
+              "agents": [
+                {
+                  "agentId": "a_orchestrator",
+                  "sent": 5,
+                  "received": 0,
+                  "toolCalls": 5,
+                  "activity": 10,
+                  "share": 0.6667
+                },
+                {
+                  "agentId": "a_worker_alpha",
+                  "sent": 0,
+                  "received": 1,
+                  "toolCalls": 0,
+                  "activity": 1,
+                  "share": 0.0667
+                },
+                {
+                  "agentId": "a_worker_beta",
+                  "sent": 0,
+                  "received": 1,
+                  "toolCalls": 0,
+                  "activity": 1,
+                  "share": 0.0667
+                },
+                {
+                  "agentId": "a_worker_delta",
+                  "sent": 0,
+                  "received": 1,
+                  "toolCalls": 0,
+                  "activity": 1,
+                  "share": 0.0667
+                },
+                {
+                  "agentId": "a_worker_epsilon",
+                  "sent": 0,
+                  "received": 1,
+                  "toolCalls": 0,
+                  "activity": 1,
+                  "share": 0.0667
+                },
+                {
+                  "agentId": "a_worker_gamma",
+                  "sent": 0,
+                  "received": 1,
+                  "toolCalls": 0,
+                  "activity": 1,
+                  "share": 0.0667
+                }
+              ],
+              "channels": [
+                {
+                  "a": "a_orchestrator",
+                  "b": "a_worker_alpha",
+                  "volume": 1,
+                  "share": 0.2
+                },
+                {
+                  "a": "a_orchestrator",
+                  "b": "a_worker_beta",
+                  "volume": 1,
+                  "share": 0.2
+                },
+                {
+                  "a": "a_orchestrator",
+                  "b": "a_worker_delta",
+                  "volume": 1,
+                  "share": 0.2
+                },
+                {
+                  "a": "a_orchestrator",
+                  "b": "a_worker_epsilon",
+                  "volume": 1,
+                  "share": 0.2
+                },
+                {
+                  "a": "a_orchestrator",
+                  "b": "a_worker_gamma",
+                  "volume": 1,
+                  "share": 0.2
+                }
+              ],
+              "totalMessages": 5,
+              "totalActivity": 15,
+              "topAgentId": "a_orchestrator",
+              "agentRatio": 10,
+              "channelRatio": 1,
+              "basis": "agent"
+            }
+          },
+          {
+            "kind": "cost",
+            "question": "Where did the run’s spend concentrate?",
+            "answer": "Not recorded: this export carries no token or cost column, so no agent can be charged.",
+            "short": "not recorded",
+            "agentIds": [],
+            "supported": false,
+            "reason": "The export records no cost figures (the adapter sets them to 0), and v1 draws no cost channel — PRD §4.2 lists a cost heat overlay as post-MVP.",
+            "evidence": {
+              "kind": "cost",
+              "recorded": false,
+              "agents": [],
+              "totalCostUsd": 0,
+              "topShare": 0,
+              "topAgentId": null
+            }
+          }
+        ],
+        "channels": [
+          {
+            "a": "a_orchestrator",
+            "b": "a_worker_alpha",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_1001"
+            ],
+            "firstAt": 1790845200000,
+            "lastAt": 1790845200000
+          },
+          {
+            "a": "a_orchestrator",
+            "b": "a_worker_beta",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_1002"
+            ],
+            "firstAt": 1790845260000,
+            "lastAt": 1790845260000
+          },
+          {
+            "a": "a_orchestrator",
+            "b": "a_worker_delta",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_1004"
+            ],
+            "firstAt": 1790845380000,
+            "lastAt": 1790845380000
+          },
+          {
+            "a": "a_orchestrator",
+            "b": "a_worker_epsilon",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_1005"
+            ],
+            "firstAt": 1790845440000,
+            "lastAt": 1790845440000
+          },
+          {
+            "a": "a_orchestrator",
+            "b": "a_worker_gamma",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_1003"
+            ],
+            "firstAt": 1790845320000,
+            "lastAt": 1790845320000
+          }
+        ],
+        "fans": [
+          {
+            "agentId": "a_orchestrator",
+            "reach": 5,
+            "directedReach": 5,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 5,
+            "netIn": 0,
+            "balanced": 0,
+            "spokes": 5,
+            "childIds": [
+              "a_worker_alpha",
+              "a_worker_beta",
+              "a_worker_delta",
+              "a_worker_epsilon",
+              "a_worker_gamma"
+            ]
+          },
+          {
+            "agentId": "a_worker_alpha",
+            "reach": 0,
+            "directedReach": 0,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 1,
+            "balanced": 0,
+            "spokes": 1,
+            "childIds": []
+          },
+          {
+            "agentId": "a_worker_beta",
+            "reach": 0,
+            "directedReach": 0,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 1,
+            "balanced": 0,
+            "spokes": 1,
+            "childIds": []
+          },
+          {
+            "agentId": "a_worker_delta",
+            "reach": 0,
+            "directedReach": 0,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 1,
+            "balanced": 0,
+            "spokes": 1,
+            "childIds": []
+          },
+          {
+            "agentId": "a_worker_epsilon",
+            "reach": 0,
+            "directedReach": 0,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 1,
+            "balanced": 0,
+            "spokes": 1,
+            "childIds": []
+          },
+          {
+            "agentId": "a_worker_gamma",
+            "reach": 0,
+            "directedReach": 0,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 1,
+            "balanced": 0,
+            "spokes": 1,
+            "childIds": []
+          }
+        ],
+        "hierarchyDerivable": true,
+        "edgeCounts": {
+          "spawn": 5,
+          "handoff": 0,
+          "message": 0
+        },
+        "pairCount": 5,
+        "lastExchange": {
+          "from": "a_orchestrator",
+          "to": "a_worker_epsilon"
+        }
+      },
+      "comparisons": [
+        {
+          "kind": "fan-out",
+          "question": "Which agent has the widest fan-out, and how many agents does it drive?",
+          "answer": "a_orchestrator — 5 agents put to work, from 5 drawn channels (all one-way)",
+          "agentIds": [
+            "a_orchestrator"
+          ],
+          "supported": true,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 5 message rows, grouped by sender, counting distinct recipients",
+            "rowsToScan": 5,
+            "keysToHold": 1,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "one node's incident arc fan, with the net direction animating away (M3-T2)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 1
+          },
+          "rowRatio": 5,
+          "verdict": "spatial-faster",
+          "claim": "5 rows to aggregate on the timeline vs one mark in the scene (5× fewer reads): one node's incident arc fan, with the net direction animating away (M3-T2)",
+          "reason": null
+        },
+        {
+          "kind": "loop",
+          "question": "Is a pair still going round — a sub-agent loop that never settled?",
+          "answer": "No loop: no pair exchanges messages in both directions.",
+          "agentIds": [],
+          "supported": false,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 5 message rows, folded into one counter pair per channel, then compared for symmetry",
+            "rowsToScan": 5,
+            "keysToHold": 5,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "the heaviest two-way arc, drawn from both ends with no net flow to animate (M3-T2)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 0
+          },
+          "rowRatio": null,
+          "verdict": "not-drawn",
+          "claim": "no drawn channel carries it: the heaviest two-way arc, drawn from both ends with no net flow to animate (M3-T2)",
+          "reason": "No pair exchanges messages in both directions."
+        },
+        {
+          "kind": "imbalance",
+          "question": "Where does the run’s traffic concentrate — one agent, or one channel?",
+          "answer": "a_orchestrator carries 67% of the run’s activity (10 of 15), 10× the next agent",
+          "agentIds": [
+            "a_orchestrator"
+          ],
+          "supported": true,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 5 message rows, totalled per agent and per channel, then compared",
+            "rowsToScan": 5,
+            "keysToHold": 1,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "node radius and glow (activity, M2-T3/M3-T4) and arc width (volume)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 1
+          },
+          "rowRatio": 5,
+          "verdict": "spatial-faster",
+          "claim": "5 rows to aggregate on the timeline vs one mark in the scene (5× fewer reads): node radius and glow (activity, M2-T3/M3-T4) and arc width (volume)",
+          "reason": null
+        },
+        {
+          "kind": "cost",
+          "question": "Where did the run’s spend concentrate?",
+          "answer": "Not recorded: this export carries no token or cost column, so no agent can be charged.",
+          "agentIds": [],
+          "supported": false,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 5 message rows, summed per agent from the export’s cost column, which v1 does not carry",
+            "rowsToScan": 5,
+            "keysToHold": 6,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "nothing — v1 draws no cost channel (PRD §4.2 keeps a cost heat overlay post-MVP)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 0
+          },
+          "rowRatio": null,
+          "verdict": "not-drawn",
+          "claim": "no drawn channel carries it: nothing — v1 draws no cost channel (PRD §4.2 keeps a cost heat overlay post-MVP)",
+          "reason": "The export records no cost figures (the adapter sets them to 0), and v1 draws no cost channel — PRD §4.2 lists a cost heat overlay as post-MVP."
+        }
+      ],
+      "demonstrated": [
+        "fan-out",
+        "imbalance"
+      ],
+      "unavailable": [
+        "loop",
+        "cost"
+      ],
+      "met": true,
+      "verdictLine": "2 of 4 structural facts read off the scene faster than the transcript",
+      "caveats": [
+        "Cost concentration cannot be compared at all: the export records no cost figures and v1 draws no cost channel, so the fact is reported as unavailable rather than as a tie."
+      ]
+    },
+    {
+      "runId": "run_e55bfefa",
+      "label": "fixture: Loop",
+      "facts": {
+        "runId": "run_e55bfefa",
+        "facts": [
+          {
+            "kind": "fan-out",
+            "question": "Which agent has the widest fan-out, and how many agents does it drive?",
+            "answer": "No agent fans out: every agent addresses at most one other.",
+            "short": "no fan-out",
+            "agentIds": [],
+            "supported": false,
+            "reason": "No agent fans out on this run: the widest spawn is 1 child.",
+            "evidence": {
+              "kind": "fan-out",
+              "basis": "spawn",
+              "ranking": [
+                {
+                  "agentId": "a_orchestrator",
+                  "reach": 1,
+                  "directedReach": 1,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 1,
+                  "netIn": 0,
+                  "balanced": 0,
+                  "spokes": 1,
+                  "childIds": [
+                    "a_researcher"
+                  ]
+                },
+                {
+                  "agentId": "a_critic",
+                  "reach": 1,
+                  "directedReach": 1,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 0,
+                  "balanced": 1,
+                  "spokes": 1,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_researcher",
+                  "reach": 1,
+                  "directedReach": 1,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 1,
+                  "balanced": 1,
+                  "spokes": 2,
+                  "childIds": []
+                }
+              ],
+              "topAgentId": null,
+              "topFanOut": 1,
+              "topSpokes": 1,
+              "topReach": 1,
+              "topBroadcastsSent": 0,
+              "topBroadcastReach": 0,
+              "topOneWay": true,
+              "fannedAgents": 0
+            }
+          },
+          {
+            "kind": "loop",
+            "question": "Is a pair still going round — a sub-agent loop that never settled?",
+            "answer": "a_critic ⇄ a_researcher — 3 turns each way (3→ / 3←, 100% symmetric); the run ends inside the loop",
+            "short": "a_critic ⇄ a_researcher · 3 turns",
+            "agentIds": [
+              "a_critic",
+              "a_researcher"
+            ],
+            "supported": true,
+            "reason": null,
+            "evidence": {
+              "kind": "loop",
+              "pairs": [
+                {
+                  "a": "a_critic",
+                  "b": "a_researcher",
+                  "fromAToB": 3,
+                  "fromBToA": 3,
+                  "turns": 3,
+                  "balance": 1,
+                  "volume": 6,
+                  "messageIds": [
+                    "m_2002",
+                    "m_2003",
+                    "m_2004",
+                    "m_2005",
+                    "m_2006",
+                    "m_2007"
+                  ],
+                  "firstAt": 1790845260000,
+                  "lastAt": 1790845560000,
+                  "openAtEnd": true,
+                  "loop": true
+                }
+              ],
+              "reciprocating": 1,
+              "loops": 1,
+              "endsInsideLoop": true,
+              "busiestPair": {
+                "a": "a_critic",
+                "b": "a_researcher",
+                "fromAToB": 3,
+                "fromBToA": 3,
+                "turns": 3,
+                "balance": 1,
+                "volume": 6,
+                "messageIds": [
+                  "m_2002",
+                  "m_2003",
+                  "m_2004",
+                  "m_2005",
+                  "m_2006",
+                  "m_2007"
+                ],
+                "firstAt": 1790845260000,
+                "lastAt": 1790845560000,
+                "openAtEnd": true,
+                "loop": true
+              }
+            }
+          },
+          {
+            "kind": "imbalance",
+            "question": "Where does the run’s traffic concentrate — one agent, or one channel?",
+            "answer": "one channel carries 86% of the messages (a_critic ⇄ a_researcher, 6 of 7), 6× the next channel",
+            "short": "a_critic ⇄ a_researcher · 86%",
+            "agentIds": [
+              "a_critic",
+              "a_researcher"
+            ],
+            "supported": true,
+            "reason": null,
+            "evidence": {
+              "kind": "imbalance",
+              "agents": [
+                {
+                  "agentId": "a_researcher",
+                  "sent": 3,
+                  "received": 4,
+                  "toolCalls": 3,
+                  "activity": 10,
+                  "share": 0.4762
+                },
+                {
+                  "agentId": "a_critic",
+                  "sent": 3,
+                  "received": 3,
+                  "toolCalls": 3,
+                  "activity": 9,
+                  "share": 0.4286
+                },
+                {
+                  "agentId": "a_orchestrator",
+                  "sent": 1,
+                  "received": 0,
+                  "toolCalls": 1,
+                  "activity": 2,
+                  "share": 0.0952
+                }
+              ],
+              "channels": [
+                {
+                  "a": "a_critic",
+                  "b": "a_researcher",
+                  "volume": 6,
+                  "share": 0.8571
+                },
+                {
+                  "a": "a_orchestrator",
+                  "b": "a_researcher",
+                  "volume": 1,
+                  "share": 0.1429
+                }
+              ],
+              "totalMessages": 7,
+              "totalActivity": 21,
+              "topAgentId": "a_researcher",
+              "agentRatio": 1.11,
+              "channelRatio": 6,
+              "basis": "channel"
+            }
+          },
+          {
+            "kind": "cost",
+            "question": "Where did the run’s spend concentrate?",
+            "answer": "Not recorded: this export carries no token or cost column, so no agent can be charged.",
+            "short": "not recorded",
+            "agentIds": [],
+            "supported": false,
+            "reason": "The export records no cost figures (the adapter sets them to 0), and v1 draws no cost channel — PRD §4.2 lists a cost heat overlay as post-MVP.",
+            "evidence": {
+              "kind": "cost",
+              "recorded": false,
+              "agents": [],
+              "totalCostUsd": 0,
+              "topShare": 0,
+              "topAgentId": null
+            }
+          }
+        ],
+        "channels": [
+          {
+            "a": "a_critic",
+            "b": "a_researcher",
+            "fromAToB": 3,
+            "fromBToA": 3,
+            "volume": 6,
+            "messageIds": [
+              "m_2002",
+              "m_2003",
+              "m_2004",
+              "m_2005",
+              "m_2006",
+              "m_2007"
+            ],
+            "firstAt": 1790845260000,
+            "lastAt": 1790845560000
+          },
+          {
+            "a": "a_orchestrator",
+            "b": "a_researcher",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_2001"
+            ],
+            "firstAt": 1790845200000,
+            "lastAt": 1790845200000
+          }
+        ],
+        "fans": [
+          {
+            "agentId": "a_critic",
+            "reach": 1,
+            "directedReach": 1,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 0,
+            "balanced": 1,
+            "spokes": 1,
+            "childIds": []
+          },
+          {
+            "agentId": "a_orchestrator",
+            "reach": 1,
+            "directedReach": 1,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 1,
+            "netIn": 0,
+            "balanced": 0,
+            "spokes": 1,
+            "childIds": [
+              "a_researcher"
+            ]
+          },
+          {
+            "agentId": "a_researcher",
+            "reach": 1,
+            "directedReach": 1,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 1,
+            "balanced": 1,
+            "spokes": 2,
+            "childIds": []
+          }
+        ],
+        "hierarchyDerivable": true,
+        "edgeCounts": {
+          "spawn": 1,
+          "handoff": 0,
+          "message": 2
+        },
+        "pairCount": 2,
+        "lastExchange": {
+          "from": "a_critic",
+          "to": "a_researcher"
+        }
+      },
+      "comparisons": [
+        {
+          "kind": "fan-out",
+          "question": "Which agent has the widest fan-out, and how many agents does it drive?",
+          "answer": "No agent fans out: every agent addresses at most one other.",
+          "agentIds": [],
+          "supported": false,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 7 message rows, grouped by sender, counting distinct recipients",
+            "rowsToScan": 7,
+            "keysToHold": 3,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "one node's incident arc fan, with the net direction animating away (M3-T2)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 0
+          },
+          "rowRatio": null,
+          "verdict": "not-drawn",
+          "claim": "no drawn channel carries it: one node's incident arc fan, with the net direction animating away (M3-T2)",
+          "reason": "No agent fans out on this run: the widest spawn is 1 child."
+        },
+        {
+          "kind": "loop",
+          "question": "Is a pair still going round — a sub-agent loop that never settled?",
+          "answer": "a_critic ⇄ a_researcher — 3 turns each way (3→ / 3←, 100% symmetric); the run ends inside the loop",
+          "agentIds": [
+            "a_critic",
+            "a_researcher"
+          ],
+          "supported": true,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 7 message rows, folded into one counter pair per channel, then compared for symmetry",
+            "rowsToScan": 7,
+            "keysToHold": 2,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "the heaviest two-way arc, drawn from both ends with no net flow to animate (M3-T2)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 1
+          },
+          "rowRatio": 7,
+          "verdict": "spatial-faster",
+          "claim": "7 rows to aggregate on the timeline vs one mark in the scene (7× fewer reads): the heaviest two-way arc, drawn from both ends with no net flow to animate (M3-T2)",
+          "reason": null
+        },
+        {
+          "kind": "imbalance",
+          "question": "Where does the run’s traffic concentrate — one agent, or one channel?",
+          "answer": "one channel carries 86% of the messages (a_critic ⇄ a_researcher, 6 of 7), 6× the next channel",
+          "agentIds": [
+            "a_critic",
+            "a_researcher"
+          ],
+          "supported": true,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 7 message rows, totalled per agent and per channel, then compared",
+            "rowsToScan": 7,
+            "keysToHold": 2,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "node radius and glow (activity, M2-T3/M3-T4) and arc width (volume)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 1
+          },
+          "rowRatio": 7,
+          "verdict": "spatial-faster",
+          "claim": "7 rows to aggregate on the timeline vs one mark in the scene (7× fewer reads): node radius and glow (activity, M2-T3/M3-T4) and arc width (volume)",
+          "reason": null
+        },
+        {
+          "kind": "cost",
+          "question": "Where did the run’s spend concentrate?",
+          "answer": "Not recorded: this export carries no token or cost column, so no agent can be charged.",
+          "agentIds": [],
+          "supported": false,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 7 message rows, summed per agent from the export’s cost column, which v1 does not carry",
+            "rowsToScan": 7,
+            "keysToHold": 3,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "nothing — v1 draws no cost channel (PRD §4.2 keeps a cost heat overlay post-MVP)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 0
+          },
+          "rowRatio": null,
+          "verdict": "not-drawn",
+          "claim": "no drawn channel carries it: nothing — v1 draws no cost channel (PRD §4.2 keeps a cost heat overlay post-MVP)",
+          "reason": "The export records no cost figures (the adapter sets them to 0), and v1 draws no cost channel — PRD §4.2 lists a cost heat overlay as post-MVP."
+        }
+      ],
+      "demonstrated": [
+        "loop",
+        "imbalance"
+      ],
+      "unavailable": [
+        "fan-out",
+        "cost"
+      ],
+      "met": true,
+      "verdictLine": "2 of 4 structural facts read off the scene faster than the transcript",
+      "caveats": [
+        "Cost concentration cannot be compared at all: the export records no cost figures and v1 draws no cost channel, so the fact is reported as unavailable rather than as a tie."
+      ]
+    },
+    {
+      "runId": "run_09ca3555",
+      "label": "fixture: Dead branch",
+      "facts": {
+        "runId": "run_09ca3555",
+        "facts": [
+          {
+            "kind": "fan-out",
+            "question": "Which agent has the widest fan-out, and how many agents does it drive?",
+            "answer": "a_orchestrator — 2 agents put to work, from 2 drawn channels (0 net-in, 1 balanced)",
+            "short": "a_orchestrator · 2",
+            "agentIds": [
+              "a_orchestrator"
+            ],
+            "supported": true,
+            "reason": null,
+            "evidence": {
+              "kind": "fan-out",
+              "basis": "spawn",
+              "ranking": [
+                {
+                  "agentId": "a_orchestrator",
+                  "reach": 2,
+                  "directedReach": 2,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 1,
+                  "netIn": 0,
+                  "balanced": 1,
+                  "spokes": 2,
+                  "childIds": [
+                    "a_worker_dead",
+                    "a_worker_ok"
+                  ]
+                },
+                {
+                  "agentId": "a_worker_ok",
+                  "reach": 1,
+                  "directedReach": 1,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 0,
+                  "balanced": 1,
+                  "spokes": 1,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_worker_dead",
+                  "reach": 0,
+                  "directedReach": 0,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 1,
+                  "balanced": 0,
+                  "spokes": 1,
+                  "childIds": []
+                }
+              ],
+              "topAgentId": "a_orchestrator",
+              "topFanOut": 2,
+              "topSpokes": 2,
+              "topReach": 2,
+              "topBroadcastsSent": 0,
+              "topBroadcastReach": 0,
+              "topOneWay": false,
+              "fannedAgents": 1
+            }
+          },
+          {
+            "kind": "loop",
+            "question": "Is a pair still going round — a sub-agent loop that never settled?",
+            "answer": "No loop: 1 pair exchange once each way — a request and its reply — and nothing repeats.",
+            "short": "no loop",
+            "agentIds": [],
+            "supported": false,
+            "reason": "1 pair reciprocate once each way; a loop needs 2 turns.",
+            "evidence": {
+              "kind": "loop",
+              "pairs": [],
+              "reciprocating": 1,
+              "loops": 0,
+              "endsInsideLoop": false,
+              "busiestPair": null
+            }
+          },
+          {
+            "kind": "imbalance",
+            "question": "Where does the run’s traffic concentrate — one agent, or one channel?",
+            "answer": "one channel carries 67% of the messages (a_orchestrator ⇄ a_worker_ok, 2 of 3), 2× the next channel",
+            "short": "a_orchestrator ⇄ a_worker_ok · 67%",
+            "agentIds": [
+              "a_orchestrator",
+              "a_worker_ok"
+            ],
+            "supported": true,
+            "reason": null,
+            "evidence": {
+              "kind": "imbalance",
+              "agents": [
+                {
+                  "agentId": "a_orchestrator",
+                  "sent": 2,
+                  "received": 1,
+                  "toolCalls": 2,
+                  "activity": 5,
+                  "share": 0.5556
+                },
+                {
+                  "agentId": "a_worker_ok",
+                  "sent": 1,
+                  "received": 1,
+                  "toolCalls": 1,
+                  "activity": 3,
+                  "share": 0.3333
+                },
+                {
+                  "agentId": "a_worker_dead",
+                  "sent": 0,
+                  "received": 1,
+                  "toolCalls": 0,
+                  "activity": 1,
+                  "share": 0.1111
+                }
+              ],
+              "channels": [
+                {
+                  "a": "a_orchestrator",
+                  "b": "a_worker_ok",
+                  "volume": 2,
+                  "share": 0.6667
+                },
+                {
+                  "a": "a_orchestrator",
+                  "b": "a_worker_dead",
+                  "volume": 1,
+                  "share": 0.3333
+                }
+              ],
+              "totalMessages": 3,
+              "totalActivity": 9,
+              "topAgentId": "a_orchestrator",
+              "agentRatio": 1.67,
+              "channelRatio": 2,
+              "basis": "channel"
+            }
+          },
+          {
+            "kind": "cost",
+            "question": "Where did the run’s spend concentrate?",
+            "answer": "Not recorded: this export carries no token or cost column, so no agent can be charged.",
+            "short": "not recorded",
+            "agentIds": [],
+            "supported": false,
+            "reason": "The export records no cost figures (the adapter sets them to 0), and v1 draws no cost channel — PRD §4.2 lists a cost heat overlay as post-MVP.",
+            "evidence": {
+              "kind": "cost",
+              "recorded": false,
+              "agents": [],
+              "totalCostUsd": 0,
+              "topShare": 0,
+              "topAgentId": null
+            }
+          }
+        ],
+        "channels": [
+          {
+            "a": "a_orchestrator",
+            "b": "a_worker_dead",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_3003"
+            ],
+            "firstAt": 1790845320000,
+            "lastAt": 1790845320000
+          },
+          {
+            "a": "a_orchestrator",
+            "b": "a_worker_ok",
+            "fromAToB": 1,
+            "fromBToA": 1,
+            "volume": 2,
+            "messageIds": [
+              "m_3001",
+              "m_3002"
+            ],
+            "firstAt": 1790845200000,
+            "lastAt": 1790845260000
+          }
+        ],
+        "fans": [
+          {
+            "agentId": "a_orchestrator",
+            "reach": 2,
+            "directedReach": 2,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 1,
+            "netIn": 0,
+            "balanced": 1,
+            "spokes": 2,
+            "childIds": [
+              "a_worker_dead",
+              "a_worker_ok"
+            ]
+          },
+          {
+            "agentId": "a_worker_dead",
+            "reach": 0,
+            "directedReach": 0,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 1,
+            "balanced": 0,
+            "spokes": 1,
+            "childIds": []
+          },
+          {
+            "agentId": "a_worker_ok",
+            "reach": 1,
+            "directedReach": 1,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 0,
+            "balanced": 1,
+            "spokes": 1,
+            "childIds": []
+          }
+        ],
+        "hierarchyDerivable": true,
+        "edgeCounts": {
+          "spawn": 2,
+          "handoff": 0,
+          "message": 1
+        },
+        "pairCount": 2,
+        "lastExchange": {
+          "from": "a_orchestrator",
+          "to": "a_worker_dead"
+        }
+      },
+      "comparisons": [
+        {
+          "kind": "fan-out",
+          "question": "Which agent has the widest fan-out, and how many agents does it drive?",
+          "answer": "a_orchestrator — 2 agents put to work, from 2 drawn channels (0 net-in, 1 balanced)",
+          "agentIds": [
+            "a_orchestrator"
+          ],
+          "supported": true,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 3 message rows, grouped by sender, counting distinct recipients",
+            "rowsToScan": 3,
+            "keysToHold": 2,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "one node's incident arc fan, with the net direction animating away (M3-T2)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 1
+          },
+          "rowRatio": 3,
+          "verdict": "too-small",
+          "claim": "3 rows is too short a stream for the saving to matter",
+          "reason": "the transcript is only 3 rows long, below the 4 rows per mark a saving has to clear"
+        },
+        {
+          "kind": "loop",
+          "question": "Is a pair still going round — a sub-agent loop that never settled?",
+          "answer": "No loop: 1 pair exchange once each way — a request and its reply — and nothing repeats.",
+          "agentIds": [],
+          "supported": false,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 3 message rows, folded into one counter pair per channel, then compared for symmetry",
+            "rowsToScan": 3,
+            "keysToHold": 2,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "the heaviest two-way arc, drawn from both ends with no net flow to animate (M3-T2)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 0
+          },
+          "rowRatio": null,
+          "verdict": "not-drawn",
+          "claim": "no drawn channel carries it: the heaviest two-way arc, drawn from both ends with no net flow to animate (M3-T2)",
+          "reason": "1 pair reciprocate once each way; a loop needs 2 turns."
+        },
+        {
+          "kind": "imbalance",
+          "question": "Where does the run’s traffic concentrate — one agent, or one channel?",
+          "answer": "one channel carries 67% of the messages (a_orchestrator ⇄ a_worker_ok, 2 of 3), 2× the next channel",
+          "agentIds": [
+            "a_orchestrator",
+            "a_worker_ok"
+          ],
+          "supported": true,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 3 message rows, totalled per agent and per channel, then compared",
+            "rowsToScan": 3,
+            "keysToHold": 2,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "node radius and glow (activity, M2-T3/M3-T4) and arc width (volume)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 1
+          },
+          "rowRatio": 3,
+          "verdict": "too-small",
+          "claim": "3 rows is too short a stream for the saving to matter",
+          "reason": "the transcript is only 3 rows long, below the 4 rows per mark a saving has to clear"
+        },
+        {
+          "kind": "cost",
+          "question": "Where did the run’s spend concentrate?",
+          "answer": "Not recorded: this export carries no token or cost column, so no agent can be charged.",
+          "agentIds": [],
+          "supported": false,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 3 message rows, summed per agent from the export’s cost column, which v1 does not carry",
+            "rowsToScan": 3,
+            "keysToHold": 3,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "nothing — v1 draws no cost channel (PRD §4.2 keeps a cost heat overlay post-MVP)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 0
+          },
+          "rowRatio": null,
+          "verdict": "not-drawn",
+          "claim": "no drawn channel carries it: nothing — v1 draws no cost channel (PRD §4.2 keeps a cost heat overlay post-MVP)",
+          "reason": "The export records no cost figures (the adapter sets them to 0), and v1 draws no cost channel — PRD §4.2 lists a cost heat overlay as post-MVP."
+        }
+      ],
+      "demonstrated": [],
+      "unavailable": [
+        "loop",
+        "cost"
+      ],
+      "met": false,
+      "verdictLine": "criterion not met: 0 of 2 facts read off the scene faster than the transcript",
+      "caveats": [
+        "Cost concentration cannot be compared at all: the export records no cost figures and v1 draws no cost channel, so the fact is reported as unavailable rather than as a tie.",
+        "Fewer than 2 facts clear the 4× rows-per-mark bar on this run: it is too small (or too evenly shaped) to demonstrate the criterion."
+      ]
+    },
+    {
+      "runId": "run_d54af06d",
+      "label": "fixture: Handoff chain",
+      "facts": {
+        "runId": "run_d54af06d",
+        "facts": [
+          {
+            "kind": "fan-out",
+            "question": "Which agent addresses the most agents, and how many?",
+            "answer": "No agent fans out: every agent addresses at most one other.",
+            "short": "no fan-out",
+            "agentIds": [],
+            "supported": false,
+            "reason": "No agent fans out on this run: the widest message reach is 1 agent.",
+            "evidence": {
+              "kind": "fan-out",
+              "basis": "reach",
+              "ranking": [
+                {
+                  "agentId": "a_agent_a",
+                  "reach": 1,
+                  "directedReach": 1,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 1,
+                  "netIn": 0,
+                  "balanced": 0,
+                  "spokes": 1,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_agent_b",
+                  "reach": 1,
+                  "directedReach": 1,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 1,
+                  "netIn": 1,
+                  "balanced": 0,
+                  "spokes": 2,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_agent_c",
+                  "reach": 1,
+                  "directedReach": 1,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 1,
+                  "netIn": 1,
+                  "balanced": 0,
+                  "spokes": 2,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_agent_d",
+                  "reach": 0,
+                  "directedReach": 0,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 1,
+                  "balanced": 0,
+                  "spokes": 1,
+                  "childIds": []
+                }
+              ],
+              "topAgentId": null,
+              "topFanOut": 1,
+              "topSpokes": 1,
+              "topReach": 1,
+              "topBroadcastsSent": 0,
+              "topBroadcastReach": 0,
+              "topOneWay": true,
+              "fannedAgents": 0
+            }
+          },
+          {
+            "kind": "loop",
+            "question": "Is a pair still going round — a sub-agent loop that never settled?",
+            "answer": "No loop: no pair exchanges messages in both directions.",
+            "short": "no loop",
+            "agentIds": [],
+            "supported": false,
+            "reason": "No pair exchanges messages in both directions.",
+            "evidence": {
+              "kind": "loop",
+              "pairs": [],
+              "reciprocating": 0,
+              "loops": 0,
+              "endsInsideLoop": false,
+              "busiestPair": null
+            }
+          },
+          {
+            "kind": "imbalance",
+            "question": "Where does the run’s traffic concentrate — one agent, or one channel?",
+            "answer": "No concentration: traffic is spread evenly across agents and channels.",
+            "short": "even",
+            "agentIds": [],
+            "supported": false,
+            "reason": "No agent or channel clears 2× the next one (agents 1×, channels 1×).",
+            "evidence": {
+              "kind": "imbalance",
+              "agents": [
+                {
+                  "agentId": "a_agent_b",
+                  "sent": 1,
+                  "received": 1,
+                  "toolCalls": 1,
+                  "activity": 3,
+                  "share": 0.3333
+                },
+                {
+                  "agentId": "a_agent_c",
+                  "sent": 1,
+                  "received": 1,
+                  "toolCalls": 1,
+                  "activity": 3,
+                  "share": 0.3333
+                },
+                {
+                  "agentId": "a_agent_a",
+                  "sent": 1,
+                  "received": 0,
+                  "toolCalls": 1,
+                  "activity": 2,
+                  "share": 0.2222
+                },
+                {
+                  "agentId": "a_agent_d",
+                  "sent": 0,
+                  "received": 1,
+                  "toolCalls": 0,
+                  "activity": 1,
+                  "share": 0.1111
+                }
+              ],
+              "channels": [
+                {
+                  "a": "a_agent_a",
+                  "b": "a_agent_b",
+                  "volume": 1,
+                  "share": 0.3333
+                },
+                {
+                  "a": "a_agent_b",
+                  "b": "a_agent_c",
+                  "volume": 1,
+                  "share": 0.3333
+                },
+                {
+                  "a": "a_agent_c",
+                  "b": "a_agent_d",
+                  "volume": 1,
+                  "share": 0.3333
+                }
+              ],
+              "totalMessages": 3,
+              "totalActivity": 9,
+              "topAgentId": "a_agent_b",
+              "agentRatio": 1,
+              "channelRatio": 1,
+              "basis": null
+            }
+          },
+          {
+            "kind": "cost",
+            "question": "Where did the run’s spend concentrate?",
+            "answer": "Not recorded: this export carries no token or cost column, so no agent can be charged.",
+            "short": "not recorded",
+            "agentIds": [],
+            "supported": false,
+            "reason": "The export records no cost figures (the adapter sets them to 0), and v1 draws no cost channel — PRD §4.2 lists a cost heat overlay as post-MVP.",
+            "evidence": {
+              "kind": "cost",
+              "recorded": false,
+              "agents": [],
+              "totalCostUsd": 0,
+              "topShare": 0,
+              "topAgentId": null
+            }
+          }
+        ],
+        "channels": [
+          {
+            "a": "a_agent_a",
+            "b": "a_agent_b",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_4001"
+            ],
+            "firstAt": 1790845200000,
+            "lastAt": 1790845200000
+          },
+          {
+            "a": "a_agent_b",
+            "b": "a_agent_c",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_4002"
+            ],
+            "firstAt": 1790845260000,
+            "lastAt": 1790845260000
+          },
+          {
+            "a": "a_agent_c",
+            "b": "a_agent_d",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_4003"
+            ],
+            "firstAt": 1790845320000,
+            "lastAt": 1790845320000
+          }
+        ],
+        "fans": [
+          {
+            "agentId": "a_agent_a",
+            "reach": 1,
+            "directedReach": 1,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 1,
+            "netIn": 0,
+            "balanced": 0,
+            "spokes": 1,
+            "childIds": []
+          },
+          {
+            "agentId": "a_agent_b",
+            "reach": 1,
+            "directedReach": 1,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 1,
+            "netIn": 1,
+            "balanced": 0,
+            "spokes": 2,
+            "childIds": []
+          },
+          {
+            "agentId": "a_agent_c",
+            "reach": 1,
+            "directedReach": 1,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 1,
+            "netIn": 1,
+            "balanced": 0,
+            "spokes": 2,
+            "childIds": []
+          },
+          {
+            "agentId": "a_agent_d",
+            "reach": 0,
+            "directedReach": 0,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 1,
+            "balanced": 0,
+            "spokes": 1,
+            "childIds": []
+          }
+        ],
+        "hierarchyDerivable": false,
+        "edgeCounts": {
+          "spawn": 0,
+          "handoff": 3,
+          "message": 0
+        },
+        "pairCount": 3,
+        "lastExchange": {
+          "from": "a_agent_c",
+          "to": "a_agent_d"
+        }
+      },
+      "comparisons": [
+        {
+          "kind": "fan-out",
+          "question": "Which agent addresses the most agents, and how many?",
+          "answer": "No agent fans out: every agent addresses at most one other.",
+          "agentIds": [],
+          "supported": false,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 3 message rows, grouped by sender, counting distinct recipients",
+            "rowsToScan": 3,
+            "keysToHold": 3,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "one node's incident arc fan, with the net direction animating away (M3-T2)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 0
+          },
+          "rowRatio": null,
+          "verdict": "not-drawn",
+          "claim": "no drawn channel carries it: one node's incident arc fan, with the net direction animating away (M3-T2)",
+          "reason": "No agent fans out on this run: the widest message reach is 1 agent."
+        },
+        {
+          "kind": "loop",
+          "question": "Is a pair still going round — a sub-agent loop that never settled?",
+          "answer": "No loop: no pair exchanges messages in both directions.",
+          "agentIds": [],
+          "supported": false,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 3 message rows, folded into one counter pair per channel, then compared for symmetry",
+            "rowsToScan": 3,
+            "keysToHold": 3,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "the heaviest two-way arc, drawn from both ends with no net flow to animate (M3-T2)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 0
+          },
+          "rowRatio": null,
+          "verdict": "not-drawn",
+          "claim": "no drawn channel carries it: the heaviest two-way arc, drawn from both ends with no net flow to animate (M3-T2)",
+          "reason": "No pair exchanges messages in both directions."
+        },
+        {
+          "kind": "imbalance",
+          "question": "Where does the run’s traffic concentrate — one agent, or one channel?",
+          "answer": "No concentration: traffic is spread evenly across agents and channels.",
+          "agentIds": [],
+          "supported": false,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 3 message rows, totalled per agent and per channel, then compared",
+            "rowsToScan": 3,
+            "keysToHold": 3,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "node radius and glow (activity, M2-T3/M3-T4) and arc width (volume)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 0
+          },
+          "rowRatio": null,
+          "verdict": "not-drawn",
+          "claim": "no drawn channel carries it: node radius and glow (activity, M2-T3/M3-T4) and arc width (volume)",
+          "reason": "No agent or channel clears 2× the next one (agents 1×, channels 1×)."
+        },
+        {
+          "kind": "cost",
+          "question": "Where did the run’s spend concentrate?",
+          "answer": "Not recorded: this export carries no token or cost column, so no agent can be charged.",
+          "agentIds": [],
+          "supported": false,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 3 message rows, summed per agent from the export’s cost column, which v1 does not carry",
+            "rowsToScan": 3,
+            "keysToHold": 4,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "nothing — v1 draws no cost channel (PRD §4.2 keeps a cost heat overlay post-MVP)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 0
+          },
+          "rowRatio": null,
+          "verdict": "not-drawn",
+          "claim": "no drawn channel carries it: nothing — v1 draws no cost channel (PRD §4.2 keeps a cost heat overlay post-MVP)",
+          "reason": "The export records no cost figures (the adapter sets them to 0), and v1 draws no cost channel — PRD §4.2 lists a cost heat overlay as post-MVP."
+        }
+      ],
+      "demonstrated": [],
+      "unavailable": [
+        "fan-out",
+        "loop",
+        "imbalance",
+        "cost"
+      ],
+      "met": false,
+      "verdictLine": "criterion not met: 0 of 2 facts read off the scene faster than the transcript",
+      "caveats": [
+        "No spawn edge derives from this run’s action vocabulary, so its fan-out is counted as message reach (distinct agents addressed), not as a derived parent/child hierarchy — M5-T3 finding 3.",
+        "Cost concentration cannot be compared at all: the export records no cost figures and v1 draws no cost channel, so the fact is reported as unavailable rather than as a tie.",
+        "Fewer than 2 facts clear the 4× rows-per-mark bar on this run: it is too small (or too evenly shaped) to demonstrate the criterion."
+      ]
+    },
+    {
+      "runId": "run_a4afe631",
+      "label": "debian2_bot fleet — agent_messages export",
+      "facts": {
+        "runId": "run_a4afe631",
+        "facts": [
+          {
+            "kind": "fan-out",
+            "question": "Which agent addresses the most agents, and how many?",
+            "answer": "a_Host_hermes_bot — 9 agents addressed, from 9 drawn channels (all one-way); 3 broadcast rows reach 9 of them — message reach, not a derived hierarchy (no spawn edges)",
+            "short": "a_Host_hermes_bot · 9",
+            "agentIds": [
+              "a_Host_hermes_bot"
+            ],
+            "supported": true,
+            "reason": null,
+            "evidence": {
+              "kind": "fan-out",
+              "basis": "reach",
+              "ranking": [
+                {
+                  "agentId": "a_Host_hermes_bot",
+                  "reach": 9,
+                  "directedReach": 2,
+                  "broadcastReach": 9,
+                  "broadcastsSent": 3,
+                  "netOut": 9,
+                  "netIn": 0,
+                  "balanced": 0,
+                  "spokes": 9,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_debian2_bot",
+                  "reach": 9,
+                  "directedReach": 4,
+                  "broadcastReach": 9,
+                  "broadcastsSent": 1,
+                  "netOut": 6,
+                  "netIn": 2,
+                  "balanced": 1,
+                  "spokes": 9,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_hermes_host2",
+                  "reach": 9,
+                  "directedReach": 1,
+                  "broadcastReach": 9,
+                  "broadcastsSent": 1,
+                  "netOut": 7,
+                  "netIn": 1,
+                  "balanced": 1,
+                  "spokes": 9,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_hermes_bot",
+                  "reach": 3,
+                  "directedReach": 3,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 2,
+                  "netIn": 2,
+                  "balanced": 0,
+                  "spokes": 4,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_herm_bot",
+                  "reach": 1,
+                  "directedReach": 1,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 4,
+                  "balanced": 0,
+                  "spokes": 4,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_hermes_research",
+                  "reach": 1,
+                  "directedReach": 1,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 1,
+                  "netIn": 3,
+                  "balanced": 0,
+                  "spokes": 4,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_local",
+                  "reach": 1,
+                  "directedReach": 1,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 3,
+                  "balanced": 0,
+                  "spokes": 3,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_Rpi4_bot",
+                  "reach": 0,
+                  "directedReach": 0,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 3,
+                  "balanced": 0,
+                  "spokes": 3,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_rpi4_bot",
+                  "reach": 0,
+                  "directedReach": 0,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 3,
+                  "balanced": 0,
+                  "spokes": 3,
+                  "childIds": []
+                },
+                {
+                  "agentId": "a_video_producer",
+                  "reach": 0,
+                  "directedReach": 0,
+                  "broadcastReach": 0,
+                  "broadcastsSent": 0,
+                  "netOut": 0,
+                  "netIn": 4,
+                  "balanced": 0,
+                  "spokes": 4,
+                  "childIds": []
+                }
+              ],
+              "topAgentId": "a_Host_hermes_bot",
+              "topFanOut": 9,
+              "topSpokes": 9,
+              "topReach": 9,
+              "topBroadcastsSent": 3,
+              "topBroadcastReach": 9,
+              "topOneWay": true,
+              "fannedAgents": 4
+            }
+          },
+          {
+            "kind": "loop",
+            "question": "Is a pair still going round — a sub-agent loop that never settled?",
+            "answer": "No loop: the busiest two-way channel, a_debian2_bot ⇄ a_hermes_bot, is asymmetric (34→ / 103←, 50% symmetric) — a hub relationship, not a loop",
+            "short": "no loop",
+            "agentIds": [],
+            "supported": false,
+            "reason": "No symmetric repeated exchange (busiest two-way channel is 50% symmetric; a loop needs 80%).",
+            "evidence": {
+              "kind": "loop",
+              "pairs": [
+                {
+                  "a": "a_debian2_bot",
+                  "b": "a_hermes_bot",
+                  "fromAToB": 34,
+                  "fromBToA": 103,
+                  "turns": 34,
+                  "balance": 0.4964,
+                  "volume": 137,
+                  "messageIds": [
+                    "m_19",
+                    "m_20",
+                    "m_21",
+                    "m_22",
+                    "m_23",
+                    "m_24",
+                    "m_25",
+                    "m_26",
+                    "m_27",
+                    "m_28",
+                    "m_30",
+                    "m_31",
+                    "m_32",
+                    "m_33",
+                    "m_34",
+                    "m_36",
+                    "m_37",
+                    "m_38",
+                    "m_39",
+                    "m_40",
+                    "m_41",
+                    "m_42",
+                    "m_43",
+                    "m_44",
+                    "m_45",
+                    "m_46",
+                    "m_47",
+                    "m_48",
+                    "m_49",
+                    "m_50",
+                    "m_51",
+                    "m_52",
+                    "m_53",
+                    "m_54",
+                    "m_55",
+                    "m_56",
+                    "m_57",
+                    "m_58",
+                    "m_59",
+                    "m_60",
+                    "m_61",
+                    "m_62",
+                    "m_63",
+                    "m_66",
+                    "m_67",
+                    "m_68",
+                    "m_69",
+                    "m_70",
+                    "m_71",
+                    "m_72",
+                    "m_73",
+                    "m_74",
+                    "m_75",
+                    "m_76",
+                    "m_77",
+                    "m_78",
+                    "m_79",
+                    "m_80",
+                    "m_81",
+                    "m_82",
+                    "m_83",
+                    "m_84",
+                    "m_85",
+                    "m_86",
+                    "m_89",
+                    "m_90",
+                    "m_91",
+                    "m_92",
+                    "m_93",
+                    "m_94",
+                    "m_95",
+                    "m_96",
+                    "m_97",
+                    "m_98",
+                    "m_99",
+                    "m_100",
+                    "m_101",
+                    "m_102",
+                    "m_103",
+                    "m_104",
+                    "m_105",
+                    "m_106",
+                    "m_107",
+                    "m_108",
+                    "m_109",
+                    "m_110",
+                    "m_111",
+                    "m_112",
+                    "m_113",
+                    "m_114",
+                    "m_115",
+                    "m_116",
+                    "m_117",
+                    "m_118",
+                    "m_119",
+                    "m_120",
+                    "m_121",
+                    "m_122",
+                    "m_123",
+                    "m_124",
+                    "m_125",
+                    "m_126",
+                    "m_127",
+                    "m_128",
+                    "m_129",
+                    "m_130",
+                    "m_131",
+                    "m_132",
+                    "m_133",
+                    "m_134",
+                    "m_135",
+                    "m_136",
+                    "m_137",
+                    "m_138",
+                    "m_139",
+                    "m_140",
+                    "m_141",
+                    "m_142",
+                    "m_143",
+                    "m_144",
+                    "m_145",
+                    "m_146",
+                    "m_147",
+                    "m_148",
+                    "m_149",
+                    "m_150",
+                    "m_151",
+                    "m_152",
+                    "m_153",
+                    "m_154",
+                    "m_155",
+                    "m_156",
+                    "m_157",
+                    "m_158",
+                    "m_159",
+                    "m_160",
+                    "m_161"
+                  ],
+                  "firstAt": 1783129459689,
+                  "lastAt": 1792576468559,
+                  "openAtEnd": true,
+                  "loop": false
+                }
+              ],
+              "reciprocating": 7,
+              "loops": 0,
+              "endsInsideLoop": false,
+              "busiestPair": {
+                "a": "a_debian2_bot",
+                "b": "a_hermes_bot",
+                "fromAToB": 34,
+                "fromBToA": 103,
+                "turns": 34,
+                "balance": 0.4964,
+                "volume": 137,
+                "messageIds": [
+                  "m_19",
+                  "m_20",
+                  "m_21",
+                  "m_22",
+                  "m_23",
+                  "m_24",
+                  "m_25",
+                  "m_26",
+                  "m_27",
+                  "m_28",
+                  "m_30",
+                  "m_31",
+                  "m_32",
+                  "m_33",
+                  "m_34",
+                  "m_36",
+                  "m_37",
+                  "m_38",
+                  "m_39",
+                  "m_40",
+                  "m_41",
+                  "m_42",
+                  "m_43",
+                  "m_44",
+                  "m_45",
+                  "m_46",
+                  "m_47",
+                  "m_48",
+                  "m_49",
+                  "m_50",
+                  "m_51",
+                  "m_52",
+                  "m_53",
+                  "m_54",
+                  "m_55",
+                  "m_56",
+                  "m_57",
+                  "m_58",
+                  "m_59",
+                  "m_60",
+                  "m_61",
+                  "m_62",
+                  "m_63",
+                  "m_66",
+                  "m_67",
+                  "m_68",
+                  "m_69",
+                  "m_70",
+                  "m_71",
+                  "m_72",
+                  "m_73",
+                  "m_74",
+                  "m_75",
+                  "m_76",
+                  "m_77",
+                  "m_78",
+                  "m_79",
+                  "m_80",
+                  "m_81",
+                  "m_82",
+                  "m_83",
+                  "m_84",
+                  "m_85",
+                  "m_86",
+                  "m_89",
+                  "m_90",
+                  "m_91",
+                  "m_92",
+                  "m_93",
+                  "m_94",
+                  "m_95",
+                  "m_96",
+                  "m_97",
+                  "m_98",
+                  "m_99",
+                  "m_100",
+                  "m_101",
+                  "m_102",
+                  "m_103",
+                  "m_104",
+                  "m_105",
+                  "m_106",
+                  "m_107",
+                  "m_108",
+                  "m_109",
+                  "m_110",
+                  "m_111",
+                  "m_112",
+                  "m_113",
+                  "m_114",
+                  "m_115",
+                  "m_116",
+                  "m_117",
+                  "m_118",
+                  "m_119",
+                  "m_120",
+                  "m_121",
+                  "m_122",
+                  "m_123",
+                  "m_124",
+                  "m_125",
+                  "m_126",
+                  "m_127",
+                  "m_128",
+                  "m_129",
+                  "m_130",
+                  "m_131",
+                  "m_132",
+                  "m_133",
+                  "m_134",
+                  "m_135",
+                  "m_136",
+                  "m_137",
+                  "m_138",
+                  "m_139",
+                  "m_140",
+                  "m_141",
+                  "m_142",
+                  "m_143",
+                  "m_144",
+                  "m_145",
+                  "m_146",
+                  "m_147",
+                  "m_148",
+                  "m_149",
+                  "m_150",
+                  "m_151",
+                  "m_152",
+                  "m_153",
+                  "m_154",
+                  "m_155",
+                  "m_156",
+                  "m_157",
+                  "m_158",
+                  "m_159",
+                  "m_160",
+                  "m_161"
+                ],
+                "firstAt": 1783129459689,
+                "lastAt": 1792576468559,
+                "openAtEnd": true,
+                "loop": false
+              }
+            }
+          },
+          {
+            "kind": "imbalance",
+            "question": "Where does the run’s traffic concentrate — one agent, or one channel?",
+            "answer": "one channel carries 87% of the messages (a_debian2_bot ⇄ a_hermes_bot, 137 of 158), 22.83× the next channel",
+            "short": "a_debian2_bot ⇄ a_hermes_bot · 87%",
+            "agentIds": [
+              "a_debian2_bot",
+              "a_hermes_bot"
+            ],
+            "supported": true,
+            "reason": null,
+            "evidence": {
+              "kind": "imbalance",
+              "agents": [
+                {
+                  "agentId": "a_hermes_bot",
+                  "sent": 106,
+                  "received": 41,
+                  "toolCalls": 88,
+                  "activity": 235,
+                  "share": 0.4958
+                },
+                {
+                  "agentId": "a_debian2_bot",
+                  "sent": 39,
+                  "received": 108,
+                  "toolCalls": 29,
+                  "activity": 176,
+                  "share": 0.3713
+                },
+                {
+                  "agentId": "a_Host_hermes_bot",
+                  "sent": 8,
+                  "received": 7,
+                  "toolCalls": 0,
+                  "activity": 15,
+                  "share": 0.0316
+                },
+                {
+                  "agentId": "a_herm_bot",
+                  "sent": 1,
+                  "received": 8,
+                  "toolCalls": 0,
+                  "activity": 9,
+                  "share": 0.019
+                },
+                {
+                  "agentId": "a_hermes_research",
+                  "sent": 1,
+                  "received": 5,
+                  "toolCalls": 1,
+                  "activity": 7,
+                  "share": 0.0148
+                },
+                {
+                  "agentId": "a_rpi4_bot",
+                  "sent": 0,
+                  "received": 7,
+                  "toolCalls": 0,
+                  "activity": 7,
+                  "share": 0.0148
+                },
+                {
+                  "agentId": "a_video_producer",
+                  "sent": 0,
+                  "received": 7,
+                  "toolCalls": 0,
+                  "activity": 7,
+                  "share": 0.0148
+                },
+                {
+                  "agentId": "a_Rpi4_bot",
+                  "sent": 0,
+                  "received": 6,
+                  "toolCalls": 0,
+                  "activity": 6,
+                  "share": 0.0127
+                },
+                {
+                  "agentId": "a_hermes_host2",
+                  "sent": 2,
+                  "received": 4,
+                  "toolCalls": 0,
+                  "activity": 6,
+                  "share": 0.0127
+                },
+                {
+                  "agentId": "a_local",
+                  "sent": 1,
+                  "received": 5,
+                  "toolCalls": 0,
+                  "activity": 6,
+                  "share": 0.0127
+                }
+              ],
+              "channels": [
+                {
+                  "a": "a_debian2_bot",
+                  "b": "a_hermes_bot",
+                  "volume": 137,
+                  "share": 0.8671
+                },
+                {
+                  "a": "a_Host_hermes_bot",
+                  "b": "a_hermes_bot",
+                  "volume": 6,
+                  "share": 0.038
+                },
+                {
+                  "a": "a_Host_hermes_bot",
+                  "b": "a_herm_bot",
+                  "volume": 5,
+                  "share": 0.0316
+                },
+                {
+                  "a": "a_Host_hermes_bot",
+                  "b": "a_debian2_bot",
+                  "volume": 4,
+                  "share": 0.0253
+                },
+                {
+                  "a": "a_Host_hermes_bot",
+                  "b": "a_hermes_host2",
+                  "volume": 4,
+                  "share": 0.0253
+                },
+                {
+                  "a": "a_Host_hermes_bot",
+                  "b": "a_local",
+                  "volume": 4,
+                  "share": 0.0253
+                },
+                {
+                  "a": "a_Host_hermes_bot",
+                  "b": "a_Rpi4_bot",
+                  "volume": 3,
+                  "share": 0.019
+                },
+                {
+                  "a": "a_Host_hermes_bot",
+                  "b": "a_hermes_research",
+                  "volume": 3,
+                  "share": 0.019
+                },
+                {
+                  "a": "a_Host_hermes_bot",
+                  "b": "a_rpi4_bot",
+                  "volume": 3,
+                  "share": 0.019
+                },
+                {
+                  "a": "a_Host_hermes_bot",
+                  "b": "a_video_producer",
+                  "volume": 3,
+                  "share": 0.019
+                },
+                {
+                  "a": "a_debian2_bot",
+                  "b": "a_rpi4_bot",
+                  "volume": 3,
+                  "share": 0.019
+                },
+                {
+                  "a": "a_Rpi4_bot",
+                  "b": "a_debian2_bot",
+                  "volume": 2,
+                  "share": 0.0127
+                },
+                {
+                  "a": "a_debian2_bot",
+                  "b": "a_hermes_host2",
+                  "volume": 2,
+                  "share": 0.0127
+                },
+                {
+                  "a": "a_debian2_bot",
+                  "b": "a_video_producer",
+                  "volume": 2,
+                  "share": 0.0127
+                },
+                {
+                  "a": "a_herm_bot",
+                  "b": "a_hermes_bot",
+                  "volume": 2,
+                  "share": 0.0127
+                },
+                {
+                  "a": "a_hermes_bot",
+                  "b": "a_hermes_host2",
+                  "volume": 2,
+                  "share": 0.0127
+                },
+                {
+                  "a": "a_Rpi4_bot",
+                  "b": "a_hermes_host2",
+                  "volume": 1,
+                  "share": 0.0063
+                },
+                {
+                  "a": "a_debian2_bot",
+                  "b": "a_herm_bot",
+                  "volume": 1,
+                  "share": 0.0063
+                },
+                {
+                  "a": "a_debian2_bot",
+                  "b": "a_hermes_research",
+                  "volume": 1,
+                  "share": 0.0063
+                },
+                {
+                  "a": "a_debian2_bot",
+                  "b": "a_local",
+                  "volume": 1,
+                  "share": 0.0063
+                },
+                {
+                  "a": "a_herm_bot",
+                  "b": "a_hermes_host2",
+                  "volume": 1,
+                  "share": 0.0063
+                },
+                {
+                  "a": "a_hermes_host2",
+                  "b": "a_hermes_research",
+                  "volume": 1,
+                  "share": 0.0063
+                },
+                {
+                  "a": "a_hermes_host2",
+                  "b": "a_local",
+                  "volume": 1,
+                  "share": 0.0063
+                },
+                {
+                  "a": "a_hermes_host2",
+                  "b": "a_rpi4_bot",
+                  "volume": 1,
+                  "share": 0.0063
+                },
+                {
+                  "a": "a_hermes_host2",
+                  "b": "a_video_producer",
+                  "volume": 1,
+                  "share": 0.0063
+                },
+                {
+                  "a": "a_hermes_research",
+                  "b": "a_video_producer",
+                  "volume": 1,
+                  "share": 0.0063
+                }
+              ],
+              "totalMessages": 158,
+              "totalActivity": 474,
+              "topAgentId": "a_hermes_bot",
+              "agentRatio": 1.34,
+              "channelRatio": 22.83,
+              "basis": "channel"
+            }
+          },
+          {
+            "kind": "cost",
+            "question": "Where did the run’s spend concentrate?",
+            "answer": "Not recorded: this export carries no token or cost column, so no agent can be charged.",
+            "short": "not recorded",
+            "agentIds": [],
+            "supported": false,
+            "reason": "The export records no cost figures (the adapter sets them to 0), and v1 draws no cost channel — PRD §4.2 lists a cost heat overlay as post-MVP.",
+            "evidence": {
+              "kind": "cost",
+              "recorded": false,
+              "agents": [],
+              "totalCostUsd": 0,
+              "topShare": 0,
+              "topAgentId": null
+            }
+          }
+        ],
+        "channels": [
+          {
+            "a": "a_Host_hermes_bot",
+            "b": "a_Rpi4_bot",
+            "fromAToB": 3,
+            "fromBToA": 0,
+            "volume": 3,
+            "messageIds": [
+              "m_8",
+              "m_9",
+              "m_12"
+            ],
+            "firstAt": 1781078569426,
+            "lastAt": 1781086461411
+          },
+          {
+            "a": "a_Host_hermes_bot",
+            "b": "a_debian2_bot",
+            "fromAToB": 3,
+            "fromBToA": 1,
+            "volume": 4,
+            "messageIds": [
+              "m_8",
+              "m_9",
+              "m_12",
+              "m_86"
+            ],
+            "firstAt": 1781078569426,
+            "lastAt": 1784793911996
+          },
+          {
+            "a": "a_Host_hermes_bot",
+            "b": "a_herm_bot",
+            "fromAToB": 4,
+            "fromBToA": 1,
+            "volume": 5,
+            "messageIds": [
+              "m_8",
+              "m_9",
+              "m_11",
+              "m_12",
+              "m_13"
+            ],
+            "firstAt": 1781078569426,
+            "lastAt": 1781087590799
+          },
+          {
+            "a": "a_Host_hermes_bot",
+            "b": "a_hermes_bot",
+            "fromAToB": 5,
+            "fromBToA": 1,
+            "volume": 6,
+            "messageIds": [
+              "m_8",
+              "m_9",
+              "m_10",
+              "m_12",
+              "m_14",
+              "m_15"
+            ],
+            "firstAt": 1781078569426,
+            "lastAt": 1781089275385
+          },
+          {
+            "a": "a_Host_hermes_bot",
+            "b": "a_hermes_host2",
+            "fromAToB": 3,
+            "fromBToA": 1,
+            "volume": 4,
+            "messageIds": [
+              "m_7",
+              "m_8",
+              "m_9",
+              "m_12"
+            ],
+            "firstAt": 1781078454177,
+            "lastAt": 1781086461411
+          },
+          {
+            "a": "a_Host_hermes_bot",
+            "b": "a_hermes_research",
+            "fromAToB": 3,
+            "fromBToA": 0,
+            "volume": 3,
+            "messageIds": [
+              "m_8",
+              "m_9",
+              "m_12"
+            ],
+            "firstAt": 1781078569426,
+            "lastAt": 1781086461411
+          },
+          {
+            "a": "a_Host_hermes_bot",
+            "b": "a_local",
+            "fromAToB": 3,
+            "fromBToA": 1,
+            "volume": 4,
+            "messageIds": [
+              "m_8",
+              "m_9",
+              "m_12",
+              "m_88"
+            ],
+            "firstAt": 1781078569426,
+            "lastAt": 1785032067380
+          },
+          {
+            "a": "a_Host_hermes_bot",
+            "b": "a_rpi4_bot",
+            "fromAToB": 3,
+            "fromBToA": 0,
+            "volume": 3,
+            "messageIds": [
+              "m_8",
+              "m_9",
+              "m_12"
+            ],
+            "firstAt": 1781078569426,
+            "lastAt": 1781086461411
+          },
+          {
+            "a": "a_Host_hermes_bot",
+            "b": "a_video_producer",
+            "fromAToB": 3,
+            "fromBToA": 0,
+            "volume": 3,
+            "messageIds": [
+              "m_8",
+              "m_9",
+              "m_12"
+            ],
+            "firstAt": 1781078569426,
+            "lastAt": 1781086461411
+          },
+          {
+            "a": "a_Rpi4_bot",
+            "b": "a_debian2_bot",
+            "fromAToB": 0,
+            "fromBToA": 2,
+            "volume": 2,
+            "messageIds": [
+              "m_29",
+              "m_86"
+            ],
+            "firstAt": 1783607774000,
+            "lastAt": 1784793911996
+          },
+          {
+            "a": "a_Rpi4_bot",
+            "b": "a_hermes_host2",
+            "fromAToB": 0,
+            "fromBToA": 1,
+            "volume": 1,
+            "messageIds": [
+              "m_7"
+            ],
+            "firstAt": 1781078454177,
+            "lastAt": 1781078454177
+          },
+          {
+            "a": "a_debian2_bot",
+            "b": "a_herm_bot",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_86"
+            ],
+            "firstAt": 1784793911996,
+            "lastAt": 1784793911996
+          },
+          {
+            "a": "a_debian2_bot",
+            "b": "a_hermes_bot",
+            "fromAToB": 34,
+            "fromBToA": 103,
+            "volume": 137,
+            "messageIds": [
+              "m_19",
+              "m_20",
+              "m_21",
+              "m_22",
+              "m_23",
+              "m_24",
+              "m_25",
+              "m_26",
+              "m_27",
+              "m_28",
+              "m_30",
+              "m_31",
+              "m_32",
+              "m_33",
+              "m_34",
+              "m_36",
+              "m_37",
+              "m_38",
+              "m_39",
+              "m_40",
+              "m_41",
+              "m_42",
+              "m_43",
+              "m_44",
+              "m_45",
+              "m_46",
+              "m_47",
+              "m_48",
+              "m_49",
+              "m_50",
+              "m_51",
+              "m_52",
+              "m_53",
+              "m_54",
+              "m_55",
+              "m_56",
+              "m_57",
+              "m_58",
+              "m_59",
+              "m_60",
+              "m_61",
+              "m_62",
+              "m_63",
+              "m_66",
+              "m_67",
+              "m_68",
+              "m_69",
+              "m_70",
+              "m_71",
+              "m_72",
+              "m_73",
+              "m_74",
+              "m_75",
+              "m_76",
+              "m_77",
+              "m_78",
+              "m_79",
+              "m_80",
+              "m_81",
+              "m_82",
+              "m_83",
+              "m_84",
+              "m_85",
+              "m_86",
+              "m_89",
+              "m_90",
+              "m_91",
+              "m_92",
+              "m_93",
+              "m_94",
+              "m_95",
+              "m_96",
+              "m_97",
+              "m_98",
+              "m_99",
+              "m_100",
+              "m_101",
+              "m_102",
+              "m_103",
+              "m_104",
+              "m_105",
+              "m_106",
+              "m_107",
+              "m_108",
+              "m_109",
+              "m_110",
+              "m_111",
+              "m_112",
+              "m_113",
+              "m_114",
+              "m_115",
+              "m_116",
+              "m_117",
+              "m_118",
+              "m_119",
+              "m_120",
+              "m_121",
+              "m_122",
+              "m_123",
+              "m_124",
+              "m_125",
+              "m_126",
+              "m_127",
+              "m_128",
+              "m_129",
+              "m_130",
+              "m_131",
+              "m_132",
+              "m_133",
+              "m_134",
+              "m_135",
+              "m_136",
+              "m_137",
+              "m_138",
+              "m_139",
+              "m_140",
+              "m_141",
+              "m_142",
+              "m_143",
+              "m_144",
+              "m_145",
+              "m_146",
+              "m_147",
+              "m_148",
+              "m_149",
+              "m_150",
+              "m_151",
+              "m_152",
+              "m_153",
+              "m_154",
+              "m_155",
+              "m_156",
+              "m_157",
+              "m_158",
+              "m_159",
+              "m_160",
+              "m_161"
+            ],
+            "firstAt": 1783129459689,
+            "lastAt": 1792576468559
+          },
+          {
+            "a": "a_debian2_bot",
+            "b": "a_hermes_host2",
+            "fromAToB": 1,
+            "fromBToA": 1,
+            "volume": 2,
+            "messageIds": [
+              "m_7",
+              "m_86"
+            ],
+            "firstAt": 1781078454177,
+            "lastAt": 1784793911996
+          },
+          {
+            "a": "a_debian2_bot",
+            "b": "a_hermes_research",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_86"
+            ],
+            "firstAt": 1784793911996,
+            "lastAt": 1784793911996
+          },
+          {
+            "a": "a_debian2_bot",
+            "b": "a_local",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_86"
+            ],
+            "firstAt": 1784793911996,
+            "lastAt": 1784793911996
+          },
+          {
+            "a": "a_debian2_bot",
+            "b": "a_rpi4_bot",
+            "fromAToB": 3,
+            "fromBToA": 0,
+            "volume": 3,
+            "messageIds": [
+              "m_64",
+              "m_65",
+              "m_86"
+            ],
+            "firstAt": 1784295229664,
+            "lastAt": 1784793911996
+          },
+          {
+            "a": "a_debian2_bot",
+            "b": "a_video_producer",
+            "fromAToB": 2,
+            "fromBToA": 0,
+            "volume": 2,
+            "messageIds": [
+              "m_35",
+              "m_86"
+            ],
+            "firstAt": 1783649273163,
+            "lastAt": 1784793911996
+          },
+          {
+            "a": "a_herm_bot",
+            "b": "a_hermes_bot",
+            "fromAToB": 0,
+            "fromBToA": 2,
+            "volume": 2,
+            "messageIds": [
+              "m_4",
+              "m_5"
+            ],
+            "firstAt": 1780797480050,
+            "lastAt": 1780839460754
+          },
+          {
+            "a": "a_herm_bot",
+            "b": "a_hermes_host2",
+            "fromAToB": 0,
+            "fromBToA": 1,
+            "volume": 1,
+            "messageIds": [
+              "m_7"
+            ],
+            "firstAt": 1781078454177,
+            "lastAt": 1781078454177
+          },
+          {
+            "a": "a_hermes_bot",
+            "b": "a_hermes_host2",
+            "fromAToB": 0,
+            "fromBToA": 2,
+            "volume": 2,
+            "messageIds": [
+              "m_6",
+              "m_7"
+            ],
+            "firstAt": 1781078450562,
+            "lastAt": 1781078454177
+          },
+          {
+            "a": "a_hermes_host2",
+            "b": "a_hermes_research",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_7"
+            ],
+            "firstAt": 1781078454177,
+            "lastAt": 1781078454177
+          },
+          {
+            "a": "a_hermes_host2",
+            "b": "a_local",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_7"
+            ],
+            "firstAt": 1781078454177,
+            "lastAt": 1781078454177
+          },
+          {
+            "a": "a_hermes_host2",
+            "b": "a_rpi4_bot",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_7"
+            ],
+            "firstAt": 1781078454177,
+            "lastAt": 1781078454177
+          },
+          {
+            "a": "a_hermes_host2",
+            "b": "a_video_producer",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_7"
+            ],
+            "firstAt": 1781078454177,
+            "lastAt": 1781078454177
+          },
+          {
+            "a": "a_hermes_research",
+            "b": "a_video_producer",
+            "fromAToB": 1,
+            "fromBToA": 0,
+            "volume": 1,
+            "messageIds": [
+              "m_18"
+            ],
+            "firstAt": 1783128397839,
+            "lastAt": 1783128397839
+          }
+        ],
+        "fans": [
+          {
+            "agentId": "a_Host_hermes_bot",
+            "reach": 9,
+            "directedReach": 2,
+            "broadcastReach": 9,
+            "broadcastsSent": 3,
+            "netOut": 9,
+            "netIn": 0,
+            "balanced": 0,
+            "spokes": 9,
+            "childIds": []
+          },
+          {
+            "agentId": "a_Rpi4_bot",
+            "reach": 0,
+            "directedReach": 0,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 3,
+            "balanced": 0,
+            "spokes": 3,
+            "childIds": []
+          },
+          {
+            "agentId": "a_debian2_bot",
+            "reach": 9,
+            "directedReach": 4,
+            "broadcastReach": 9,
+            "broadcastsSent": 1,
+            "netOut": 6,
+            "netIn": 2,
+            "balanced": 1,
+            "spokes": 9,
+            "childIds": []
+          },
+          {
+            "agentId": "a_herm_bot",
+            "reach": 1,
+            "directedReach": 1,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 4,
+            "balanced": 0,
+            "spokes": 4,
+            "childIds": []
+          },
+          {
+            "agentId": "a_hermes_bot",
+            "reach": 3,
+            "directedReach": 3,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 2,
+            "netIn": 2,
+            "balanced": 0,
+            "spokes": 4,
+            "childIds": []
+          },
+          {
+            "agentId": "a_hermes_host2",
+            "reach": 9,
+            "directedReach": 1,
+            "broadcastReach": 9,
+            "broadcastsSent": 1,
+            "netOut": 7,
+            "netIn": 1,
+            "balanced": 1,
+            "spokes": 9,
+            "childIds": []
+          },
+          {
+            "agentId": "a_hermes_research",
+            "reach": 1,
+            "directedReach": 1,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 1,
+            "netIn": 3,
+            "balanced": 0,
+            "spokes": 4,
+            "childIds": []
+          },
+          {
+            "agentId": "a_local",
+            "reach": 1,
+            "directedReach": 1,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 3,
+            "balanced": 0,
+            "spokes": 3,
+            "childIds": []
+          },
+          {
+            "agentId": "a_rpi4_bot",
+            "reach": 0,
+            "directedReach": 0,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 3,
+            "balanced": 0,
+            "spokes": 3,
+            "childIds": []
+          },
+          {
+            "agentId": "a_video_producer",
+            "reach": 0,
+            "directedReach": 0,
+            "broadcastReach": 0,
+            "broadcastsSent": 0,
+            "netOut": 0,
+            "netIn": 4,
+            "balanced": 0,
+            "spokes": 4,
+            "childIds": []
+          }
+        ],
+        "hierarchyDerivable": false,
+        "edgeCounts": {
+          "spawn": 0,
+          "handoff": 0,
+          "message": 33
+        },
+        "pairCount": 26,
+        "lastExchange": {
+          "from": "a_debian2_bot",
+          "to": "a_hermes_bot"
+        }
+      },
+      "comparisons": [
+        {
+          "kind": "fan-out",
+          "question": "Which agent addresses the most agents, and how many?",
+          "answer": "a_Host_hermes_bot — 9 agents addressed, from 9 drawn channels (all one-way); 3 broadcast rows reach 9 of them — message reach, not a derived hierarchy (no spawn edges)",
+          "agentIds": [
+            "a_Host_hermes_bot"
+          ],
+          "supported": true,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 158 message rows, grouped by sender, counting distinct recipients",
+            "rowsToScan": 158,
+            "keysToHold": 7,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "one node's incident arc fan, with the net direction animating away (M3-T2)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 1
+          },
+          "rowRatio": 158,
+          "verdict": "spatial-faster",
+          "claim": "158 rows to aggregate on the timeline vs one mark in the scene (158× fewer reads): one node's incident arc fan, with the net direction animating away (M3-T2)",
+          "reason": null
+        },
+        {
+          "kind": "loop",
+          "question": "Is a pair still going round — a sub-agent loop that never settled?",
+          "answer": "No loop: the busiest two-way channel, a_debian2_bot ⇄ a_hermes_bot, is asymmetric (34→ / 103←, 50% symmetric) — a hub relationship, not a loop",
+          "agentIds": [],
+          "supported": false,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 158 message rows, folded into one counter pair per channel, then compared for symmetry",
+            "rowsToScan": 158,
+            "keysToHold": 26,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "the heaviest two-way arc, drawn from both ends with no net flow to animate (M3-T2)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 0
+          },
+          "rowRatio": null,
+          "verdict": "not-drawn",
+          "claim": "no drawn channel carries it: the heaviest two-way arc, drawn from both ends with no net flow to animate (M3-T2)",
+          "reason": "No symmetric repeated exchange (busiest two-way channel is 50% symmetric; a loop needs 80%)."
+        },
+        {
+          "kind": "imbalance",
+          "question": "Where does the run’s traffic concentrate — one agent, or one channel?",
+          "answer": "one channel carries 87% of the messages (a_debian2_bot ⇄ a_hermes_bot, 137 of 158), 22.83× the next channel",
+          "agentIds": [
+            "a_debian2_bot",
+            "a_hermes_bot"
+          ],
+          "supported": true,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 158 message rows, totalled per agent and per channel, then compared",
+            "rowsToScan": 158,
+            "keysToHold": 26,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "node radius and glow (activity, M2-T3/M3-T4) and arc width (volume)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 1
+          },
+          "rowRatio": 158,
+          "verdict": "spatial-faster",
+          "claim": "158 rows to aggregate on the timeline vs one mark in the scene (158× fewer reads): node radius and glow (activity, M2-T3/M3-T4) and arc width (volume)",
+          "reason": null
+        },
+        {
+          "kind": "cost",
+          "question": "Where did the run’s spend concentrate?",
+          "answer": "Not recorded: this export carries no token or cost column, so no agent can be charged.",
+          "agentIds": [],
+          "supported": false,
+          "timeline": {
+            "channel": "timeline",
+            "channelName": "the 158 message rows, summed per agent from the export’s cost column, which v1 does not carry",
+            "rowsToScan": 158,
+            "keysToHold": 10,
+            "requiresAggregation": true,
+            "marksToRead": 0
+          },
+          "spatial": {
+            "channel": "spatial",
+            "channelName": "nothing — v1 draws no cost channel (PRD §4.2 keeps a cost heat overlay post-MVP)",
+            "rowsToScan": 0,
+            "keysToHold": 0,
+            "requiresAggregation": false,
+            "marksToRead": 0
+          },
+          "rowRatio": null,
+          "verdict": "not-drawn",
+          "claim": "no drawn channel carries it: nothing — v1 draws no cost channel (PRD §4.2 keeps a cost heat overlay post-MVP)",
+          "reason": "The export records no cost figures (the adapter sets them to 0), and v1 draws no cost channel — PRD §4.2 lists a cost heat overlay as post-MVP."
+        }
+      ],
+      "demonstrated": [
+        "fan-out",
+        "imbalance"
+      ],
+      "unavailable": [
+        "loop",
+        "cost"
+      ],
+      "met": true,
+      "verdictLine": "2 of 4 structural facts read off the scene faster than the transcript",
+      "caveats": [
+        "No spawn edge derives from this run’s action vocabulary, so its fan-out is counted as message reach (distinct agents addressed), not as a derived parent/child hierarchy — M5-T3 finding 3.",
+        "Cost concentration cannot be compared at all: the export records no cost figures and v1 draws no cost channel, so the fact is reported as unavailable rather than as a tie."
+      ]
+    }
+  ]
+}

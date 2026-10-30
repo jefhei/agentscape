@@ -186,10 +186,25 @@ normalizer a user's export takes — 158 rows, 10 agents, 118 tool calls, 136 da
 What it renders, what it costs and the seven defects the dogfood exposed (bloom
 saturation, ten-times-too-wide framing, an empty hierarchy, identity fragmentation, …)
 are written down in [`docs/fleet-run.md`](docs/fleet-run.md) with two screenshots.
-Next: **M5-T4 — Implement and demonstrate the spatial-insight criterion vs a timeline
-(fan-out + runaway loop)** — the product-bet gate; M5-T3's findings feed it. Then M6-T1
-(localStorage autosave). (M5-T5, the visual review loop, is human-held: the automated
-build skips it and records no verdict.)
+The product-bet gate (M5-T4) is in [`src/insight/`](src/insight/facts.ts) —
+`buildStructuralFacts` derives PRD §7's four candidate facts (fan-out, a
+reciprocating loop, volume concentration, cost) and names the drawn channel each one
+rides on; `evaluateSpatialCriterion` prices every fact on both paths — rows to
+aggregate on a timeline vs **one mark** in the scene — and returns a verdict per fact.
+The rule that keeps it honest: a fact is `spatial-faster` only if the transcript costs
+≥ 4 rows per mark, and a fact with no drawn channel is `not-drawn` and can never count,
+so the three-message dead-branch fixture is the criterion's **negative control** (it
+must fail). The evidence is generated into
+[`docs/spatial-insight.md`](docs/spatial-insight.md) by `scripts/insight-report.mjs`
+(fixtures + the real export, numbers interpolated from the reports), and `InsightRail`
+prints the same report beside the scene (each row selects the agent it names). A
+reciprocating pair is not called a loop until the traffic is symmetric, so the fleet's
+103:33 hub channel is correctly rejected; rings of three or more agents are deliberately
+not detected yet (a cumulative graph cannot tell a ring from a set of forwards — M6-T5
+material).
+Next: **M6-T1 — localStorage autosave of loaded run + view state**. (M5-T5, the visual
+review loop, is human-held: the automated build skips it, records no verdict, and M6-T3
+waits on its findings.)
 
 ## Stack
 
@@ -204,6 +219,7 @@ three 0.185 · Zustand
 - [`BUILD_PLAN.md`](BUILD_PLAN.md) — the task plan and the verification gate
 - [`docs/frame-budget.md`](docs/frame-budget.md) — the measured frame-budget report (M5-T2)
 - [`docs/fleet-run.md`](docs/fleet-run.md) — the real `debian2_bot` fleet run and what the dogfood found (M5-T3)
+- [`docs/spatial-insight.md`](docs/spatial-insight.md) — the spatial-insight criterion, demonstrated against a timeline (M5-T4)
 - `.hermes/status.json` — current task/milestone (read this first)
 
 ## Architecture in one line
@@ -240,6 +256,7 @@ npm run verify   # the full gate: lint + format + typecheck + test + build
 | `npm run verify` | **the gate** — lint → format:check → typecheck → test → build |
 | `npm run profile:frames` | sample browser frame times for the report (needs `npm run preview` up) |
 | `npm run profile` | regenerate `docs/frame-budget.md` from the measured frame samples |
+| `npm run insight` | regenerate `docs/spatial-insight.md`/`.json` — the M5-T4 criterion evidence |
 
 The gate's wiring is itself tested (`src/gate.test.ts`): dropping a step, flipping `test`
 to watch mode, or letting lint stop failing on warnings trips that test rather than

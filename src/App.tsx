@@ -4,12 +4,14 @@ import { buildFixture } from './fixtures/index.ts'
 import type { FixtureShape } from './fixtures/index.ts'
 import { useFilter } from './filter/index.ts'
 import { buildRunSummary } from './hud/index.ts'
+import { evaluateSpatialCriterion } from './insight/index.ts'
 import { useSelection } from './inspect/index.ts'
 import type { TraceModel } from './model/index.ts'
 import { usePlayback } from './playback/index.ts'
 import { mountTrace } from './trace/index.ts'
 import AgentDetailPanel from './ui/AgentDetailPanel.tsx'
 import FilterBar from './ui/FilterBar.tsx'
+import InsightRail from './ui/InsightRail.tsx'
 import RunHud from './ui/RunHud.tsx'
 import TransportBar from './ui/TransportBar.tsx'
 import Viewport from './Viewport'
@@ -82,6 +84,13 @@ function resolveMountedRun(): TraceModel {
  * messages, tool calls, duration, tokens, cost). That summary is derived from the
  * run and shared by nothing else on screen — the transport reports the playhead,
  * the filter bar reports the lens, and only the HUD describes the trace itself.
+ *
+ * Since M5-T4 it mounts the **structural readout**: {@link InsightRail} prints the
+ * criterion report `evaluateSpatialCriterion(run)` derives — the structural facts
+ * the scene encodes (fan-out, a reciprocating loop, volume concentration), each
+ * row a pointer back into the scene. The rail stands down while the inspector is
+ * open, because the inspector owns that corner of the screen; and like the HUD it
+ * is a function of the run alone, so scrubbing or filtering never rewrites it.
  */
 export default function App() {
   // The mounted run (M5-T2): the default fixture, unless the URL asked for a
@@ -95,6 +104,9 @@ export default function App() {
   // life of the mount — outside React state on purpose: it must not move with the
   // playhead or the lens, and there is nothing to invalidate it.
   const summary = useMemo(() => buildRunSummary(run), [run])
+  // The criterion report (M5-T4) is the same kind of fact — a function of the run
+  // alone — and the rail is its caption. Derived once: no playhead, no lens.
+  const insight = useMemo(() => evaluateSpatialCriterion(run), [run])
 
   return (
     <div className="app">
@@ -113,6 +125,9 @@ export default function App() {
           filter={filter.filter}
         />
         <RunHud summary={summary} />
+        {selection.agentId === null && (
+          <InsightRail report={insight} onSelectAgent={selection.toggle} />
+        )}
         <FilterBar
           agents={run.agents}
           view={filter.view}

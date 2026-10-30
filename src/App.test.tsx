@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import App, { MOUNTED_RUN } from './App'
 import { FLEET_RUN } from './fixtures/real/index.ts'
 import { buildRunSummary } from './hud/index.ts'
+import { evaluateSpatialCriterion } from './insight/index.ts'
 import { DRAW_CALL_CEILING } from './scene/index.ts'
 
 /** The summary the shell derives for the mounted run (the HUD's own numbers). */
@@ -225,6 +226,39 @@ describe('App shell (M1-T1)', () => {
     )
     expect(hud.textContent).toBe(before)
     expect(hud).toHaveAttribute('data-messages', String(MOUNTED_RUN.meta.messageCount))
+  })
+
+  it('mounts the structural readout for the mounted run (M5-T4)', () => {
+    render(<App />)
+    const rail = screen.getByTestId('insight-rail')
+    const report = evaluateSpatialCriterion(MOUNTED_RUN)
+    expect(screen.getByRole('main')).toContainElement(rail)
+    // The rail prints the report the shell derived — the same pure function the
+    // test calls, so a drift between them fails here.
+    expect(rail).toHaveAttribute('data-run-id', MOUNTED_RUN.id)
+    expect(rail).toHaveAttribute('data-criterion-met', String(report.met))
+    expect(rail).toHaveAttribute('data-demonstrated', report.demonstrated.join(','))
+    // The fan-out fixture's widest fan is the orchestrator's five assignments.
+    expect(screen.getByTestId('insight-fan-out')).toHaveAttribute(
+      'data-agents',
+      'a_orchestrator',
+    )
+    expect(screen.getByTestId('insight-fan-out')).toHaveTextContent(
+      '5 agents put to work',
+    )
+  })
+
+  it('turns a structural fact into a selection, and yields the corner to the inspector (M5-T4)', () => {
+    render(<App />)
+    fireEvent.click(screen.getByTestId('insight-focus-fan-out'))
+    // The row is a pointer into the scene: it selects the agent the fact is about.
+    expect(screen.getByTestId('viewport')).toHaveAttribute(
+      'data-selected-agent',
+      'a_orchestrator',
+    )
+    expect(screen.getByTestId('detail-panel')).toBeInTheDocument()
+    // The rail stands down while the inspector is open — one owner per corner.
+    expect(screen.queryByTestId('insight-rail')).toBeNull()
   })
 })
 

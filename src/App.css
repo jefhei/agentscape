@@ -907,3 +907,94 @@ body {
   font-size: 0.66rem;
   color: #5f6b82;
 }
+
+/* ── Structural readout (M5-T4) ────────────────────────────────────────────
+   The insight rail is a caption for the scene, not a chart of it: one row per
+   structural fact the run supports, each row a pointer back into the scene. It
+   sits bottom-right, clear of the transport's centred bar, and stands down while
+   the inspector is open — the inspector owns that corner. */
+.insight-rail {
+  position: absolute;
+  right: 0.9rem;
+  bottom: 4.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: min(19rem, calc(100% - 1.8rem));
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #1b2130;
+  border-radius: 0.55rem;
+  background: rgb(11 13 18 / 88%);
+  backdrop-filter: blur(6px);
+  font-size: 0.7rem;
+  color: #9aa6bd;
+}
+
+.insight-rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.insight-rail-title {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #c8d2e4;
+}
+
+.insight-rail-count {
+  font-variant-numeric: tabular-nums;
+  color: #5f6b82;
+}
+
+.insight-rail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.insight-rail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.insight-rail-label {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #8fc3ff;
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.insight-rail-focus {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.15rem;
+}
+
+.insight-rail-focus:hover {
+  color: #ffffff;
+}
+
+.insight-rail-answer {
+  color: #9aa6bd;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.insight-rail-note {
+  margin: 0;
+  font-size: 0.66rem;
+  color: #5f6b82;
+}
