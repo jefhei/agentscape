@@ -57,13 +57,19 @@ export interface OrbitController {
  * settled cloud's radius; together they are the only inputs. Changing either
  * (a new run, a re-framed scene) resets the orbit to that scene's opening shot —
  * the same rule the transport follows when its run changes.
+ *
+ * `initial` (M6-T1) is a **restored** orbit for this scene: it seeds the state
+ * instead of the opening shot, and it is ignored by the reframe effect, so a run
+ * swap still lands on the new run's opening shot rather than on a pose from the
+ * previous trace.
  */
 export function useOrbitCamera(
   camera: SceneCamera,
   extentRadius: number,
+  initial?: OrbitCamera | null,
 ): OrbitController {
-  const [orbit, setOrbit] = useState<OrbitCamera>(() =>
-    createOrbitCamera(camera, extentRadius),
+  const [orbit, setOrbit] = useState<OrbitCamera>(
+    () => initial ?? createOrbitCamera(camera, extentRadius),
   )
 
   // The framing this orbit was created for. Identity comparison is right here:

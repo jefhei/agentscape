@@ -67,9 +67,13 @@ export interface FilterController {
  * Hold a run's filter. `model` is the run the filter is *about*: agents it does
  * not contain are pruned, and a window past its end is clamped, on the next
  * render.
+ *
+ * `initial` seeds the reducer (M6-T1 restores a saved lens); it is only the
+ * starting value — the run prune below still has the last word, so a restored lens
+ * can never outlive the run it describes.
  */
-export function useFilter(model: TraceModel): FilterController {
-  const [filter, dispatch] = useReducer(reduceFilter, IDENTITY_FILTER)
+export function useFilter(model: TraceModel, initial?: FilterState): FilterController {
+  const [filter, dispatch] = useReducer(reduceFilter, initial ?? IDENTITY_FILTER)
 
   const knownIds = useMemo(() => model.agents.map((agent) => agent.id), [model])
   const spanMs = Math.max(0, model.endedAt - model.startedAt)

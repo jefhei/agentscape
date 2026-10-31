@@ -105,7 +105,7 @@ export { default as FlyCameraRig, FLYING_CLASS } from './FlyCameraRig.tsx'
 export type { FlyCameraRigProps } from './FlyCameraRig.tsx'
 
 export { useCamera } from './useCamera.ts'
-export type { CameraController } from './useCamera.ts'
+export type { CameraController, SeededCameraView } from './useCamera.ts'
 
 export { useOrbitCamera } from './useOrbitCamera.ts'
 export type { OrbitController } from './useOrbitCamera.ts'

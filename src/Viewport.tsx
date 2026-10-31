@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
 import { Canvas } from '@react-three/fiber'
 import type { AgentId } from './types/index.ts'
@@ -7,6 +7,9 @@ import type { TraceModel } from './model/index.ts'
 import { isFilterActive } from './filter/filter.ts'
 import type { FilterState } from './filter/filter.ts'
 import { filterRevealTrack } from './filter/filterTrack.ts'
+import { cameraSnapshotOf } from './persist/snapshot.ts'
+import type { CameraSnapshot } from './persist/snapshot.ts'
+import { restoreCameraPlan } from './persist/restore.ts'
 import Scene from './scene/Scene.tsx'
 import EnvironmentRig from './scene/EnvironmentRig.tsx'
 import { buildEnvironmentPlan } from './scene/environment.ts'
@@ -97,6 +100,19 @@ export interface ViewportProps {
    * the reveal costs one pass over the kept messages and nothing else.
    */
   filter?: FilterState
+  /**
+   * The camera a saved view restores (M6-T1). Read once on mount and applied to
+   * *this* scene's opening shot, so a restored pose still belongs to the run on
+   * screen. Omit for the opening shot.
+   */
+  initialCamera?: CameraSnapshot | null
+  /**
+   * Called with the camera whenever it moves — the shell's autosave (M6-T1) is the
+   * only consumer. It is a callback rather than state because the camera moves
+   * every drag frame: lifting it into the shell as state would re-render the whole
+   * app 60 times a second.
+   */
+  onCameraChange?: (camera: CameraSnapshot) => void
 }
 
 export default function Viewport({
@@ -105,6 +121,8 @@ export default function Viewport({
   selectedAgentId = null,
   onSelectAgent,
   filter,
+  initialCamera = null,
+  onCameraChange,
 }: ViewportProps) {
   const [ready, setReady] = useState(false)
 
@@ -151,8 +169,27 @@ export default function Viewport({
   // The opening shot is the scene plan's (M3-T6); the camera state is this
   // viewport's, since only it can bind the pointer and the keys to the canvas. Both
   // modes reset when the framing camera changes, i.e. when a different run loads.
-  const camera = useCamera(openingCamera, environment.extentRadius)
+  //
+  // A saved view (M6-T1) is applied to that opening shot, not in place of it: the
+  // angles, dolly and eye come from the save, while the target, fov, near plane and
+  // flight envelope still come from this scene.
+  const restoredCamera = useMemo(
+    () =>
+      initialCamera === null
+        ? null
+        : restoreCameraPlan(initialCamera, openingCamera, environment.extentRadius),
+    [initialCamera, openingCamera, environment],
+  )
+  const camera = useCamera(openingCamera, environment.extentRadius, restoredCamera)
   const pose = camera.camera
+
+  // Report the camera after any move, for the shell's autosave (M6-T1). The deps
+  // are the state objects that change when it moves, so a render that did not move
+  // the camera reports nothing.
+  useEffect(() => {
+    if (onCameraChange === undefined) return
+    onCameraChange(cameraSnapshotOf(camera.mode, camera.orbit, camera.fly))
+  }, [onCameraChange, camera.mode, camera.orbit, camera.fly])
 
   return (
     <div

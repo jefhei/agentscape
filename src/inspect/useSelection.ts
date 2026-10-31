@@ -23,7 +23,7 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react'
 import type { Agent, AgentId } from '../types/index.ts'
 import type { TraceModel } from '../model/index.ts'
-import { EMPTY_SELECTION, reduceSelection, retainSelection } from './selection.ts'
+import { createSelection, reduceSelection, retainSelection } from './selection.ts'
 
 /** What a component gets from {@link useSelection}. */
 export interface SelectionController {
@@ -44,9 +44,15 @@ export interface SelectionController {
 /**
  * Hold a run's selection. `model` is the run the selection is *about*: agents it
  * does not contain are pruned on the next render.
+ *
+ * `initial` seeds the reducer (M6-T1 restores the inspected agent); the prune below
+ * still has the last word, so a restored selection can never name a ghost.
  */
-export function useSelection(model: TraceModel): SelectionController {
-  const [state, dispatch] = useReducer(reduceSelection, EMPTY_SELECTION)
+export function useSelection(
+  model: TraceModel,
+  initial?: AgentId | null,
+): SelectionController {
+  const [state, dispatch] = useReducer(reduceSelection, createSelection(initial))
 
   // A selection cannot outlive the agent it names (a run swap, or a re-loaded
   // export). Derived from the model, so it always matches what is on screen.

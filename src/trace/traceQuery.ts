@@ -182,6 +182,35 @@ export function parseScaleTrace(search: string): ScaleTraceRequest | null {
   return request !== null && request.kind === 'scale' ? request : null
 }
 
+/**
+ * The raw `?trace=` value a query string carries, or `null` when it carries none.
+ *
+ * A caller that has to tell **"nothing asked for a run"** from **"something asked
+ * for a run these parsers did not understand"** needs the raw value: the first
+ * means "mount the saved/default run", the second means "this link is mistyped,
+ * mount the default" — never "silently mount something else".
+ */
+export function readTraceParam(search: string): string | null {
+  return typeof search === 'string' ? rawParam(search, TRACE_PARAM) : null
+}
+
+/**
+ * The canonical query fragment that asks for `request` — the inverse of
+ * {@link parseTraceRequest}, used by the autosave (M6-T1) to remember *which* run
+ * was mounted as a re-parseable string rather than as a second ad-hoc format.
+ *
+ * `null` in, `null` out (the default mount names no run). Round-trips: parsing the
+ * fragment yields an equal request.
+ */
+export function traceRequestQuery(request: TraceRequest | null): string | null {
+  if (request === null) return null
+  if (request.kind === 'fleet') return `${TRACE_PARAM}=${FLEET_TRACE_VALUE}`
+  const base = `${TRACE_PARAM}=${SCALE_TRACE_SCHEME}${request.agents}`
+  return request.messagesPerAgent === DEFAULT_MESSAGES_PER_AGENT
+    ? base
+    : `${base}&${SCALE_MESSAGES_PARAM}=${request.messagesPerAgent}`
+}
+
 /** Build the synthetic run a query string asks for, or `null` when it asks for none. */
 export function scaleTraceRun(search: string): ScaleRun | null {
   const request = parseScaleTrace(search)

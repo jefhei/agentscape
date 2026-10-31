@@ -96,17 +96,37 @@ interface ViewState {
 }
 
 /**
+ * A **restored** camera for a scene (M6-T1): both modes, already anchored to the
+ * scene's own opening shot by `restoreCameraPlan`. Structurally this is the
+ * persist layer's `RestoredCamera`; the shape is declared here so the camera layer
+ * never imports the persistence layer (the dependency runs one way: persist → camera).
+ */
+export interface SeededCameraView {
+  mode: CameraMode
+  orbit: OrbitCamera
+  fly: FlyCamera
+}
+
+/**
  * Hold and drive the camera for one framed scene.
  *
- * `camera` is the scene plan's opening shot (M3-T6) and `extentRadius` the settled
- * cloud's radius; together they are the only inputs, and changing either (a new
- * run) re-frames both modes.
+ * `camera` is the scene plan's opening shot (M3-T6) and `extentRadius` the
+ * settled cloud's radius; together they are the only inputs, and changing either
+ * (a new run) re-frames both modes.
+ *
+ * `initial` (M6-T1) seeds both states from a saved view instead of the opening
+ * shot. It is read once, on mount, and the reframe effect below deliberately
+ * ignores it — a run swap is not a restore.
  */
-export function useCamera(camera: SceneCamera, extentRadius: number): CameraController {
-  const orbit = useOrbitCamera(camera, extentRadius)
+export function useCamera(
+  camera: SceneCamera,
+  extentRadius: number,
+  initial?: SeededCameraView | null,
+): CameraController {
+  const orbit = useOrbitCamera(camera, extentRadius, initial?.orbit)
   const [view, setView] = useState<ViewState>(() => ({
-    mode: 'orbit',
-    fly: createFlyCamera(camera, extentRadius),
+    mode: initial?.mode ?? 'orbit',
+    fly: initial?.fly ?? createFlyCamera(camera, extentRadius),
   }))
 
   // A fly camera is seeded from a *pose*; the scene's extent is the other input,

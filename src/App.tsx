@@ -6,9 +6,14 @@ import { useFilter } from './filter/index.ts'
 import { buildRunSummary } from './hud/index.ts'
 import { evaluateSpatialCriterion } from './insight/index.ts'
 import { useSelection } from './inspect/index.ts'
-import type { TraceModel } from './model/index.ts'
 import { usePlayback } from './playback/index.ts'
-import { mountTrace } from './trace/index.ts'
+import {
+  DEFAULT_CAMERA_SNAPSHOT,
+  bootState,
+  browserStorage,
+  readStoredSnapshot,
+  useAutosave,
+} from './persist/index.ts'
 import AgentDetailPanel from './ui/AgentDetailPanel.tsx'
 import FilterBar from './ui/FilterBar.tsx'
 import InsightRail from './ui/InsightRail.tsx'
@@ -17,38 +22,25 @@ import TransportBar from './ui/TransportBar.tsx'
 import Viewport from './Viewport'
 
 /**
- * The fixture the app mounts on boot (M1-T6 → M3-T6).
+ * The run the app mounts when nothing else asks for one (M1-T6 → M3-T6).
  *
  * Fan-out is the shape the product is about — one orchestrator putting five workers
  * to work — so it is the run a visitor sees first: a wide, obviously *spatial*
  * structure that a linear transcript would flatten into six unrelated messages.
  *
  * This is a deliberate end-to-end mount, not a run picker: M3-T6's job is to prove
- * the path data → layout → render works in the real app. Loading a real export
- * (the `debian2_bot` fleet dogfood) is M5-T3, and choosing between runs is a loader
- * that lands after the playback UI (M4).
+ * the path data → layout → render works in the real app. A real export
+ * (the `debian2_bot` fleet dogfood) mounts through `?trace=fleet` (M5-T3), and the
+ * autosave (M6-T1) remembers which of them was open.
  */
 const DEFAULT_FIXTURE: FixtureShape = 'fan-out'
 
 /** The run the app mounts — built through the real ingest path (M1-T4 + M1-T5). */
 export const MOUNTED_RUN = buildFixture(DEFAULT_FIXTURE).run
 
-/**
- * The run to mount for the current URL (M5-T2's profiling affordance, M5-T3's
- * dogfood).
- *
- * `?trace=scale:2000` mounts a synthetic run of that size, `?trace=fleet` mounts
- * the real `debian2_bot` export snapshot; anything else — the normal case, and
- * every mistyped URL — mounts {@link MOUNTED_RUN}. The choice itself belongs to
- * the pure `mountTrace` (one parser, both schemes), so this function only picks
- * the default when the URL asked for nothing.
- */
-function resolveMountedRun(): TraceModel {
-  if (typeof window !== 'undefined') {
-    const mounted = mountTrace(window.location.search)
-    if (mounted !== null) return mounted.run
-  }
-  return MOUNTED_RUN
+/** The page's query string, or `''` outside a browser (tests, SSR). */
+function currentSearch(): string {
+  return typeof window === 'undefined' ? '' : window.location.search
 }
 
 /**
@@ -91,15 +83,29 @@ function resolveMountedRun(): TraceModel {
  * row a pointer back into the scene. The rail stands down while the inspector is
  * open, because the inspector owns that corner of the screen; and like the HUD it
  * is a function of the run alone, so scrubbing or filtering never rewrites it.
+ *
+ * Since M6-T1 it owns **persistence** instead of assuming a fresh start: the boot
+ * (which run opens, and which saved view lands on it) is decided once by the pure
+ * {@link bootState}, the saved playhead / lens / selection seed the three hooks
+ * below, and {@link useAutosave} writes the view back to `localStorage` while the
+ * app is used. The camera is the one part the shell cannot read — it lives in the
+ * viewport — so the viewport reports it through a stable callback into the
+ * autosave's ref, which keeps a drag from re-rendering the shell.
  */
 export default function App() {
-  // The mounted run (M5-T2): the default fixture, unless the URL asked for a
-  // synthetic scale run. Resolved once — a URL is not state that can change
-  // under a mount, and every child takes the run by reference.
-  const run = useMemo(resolveMountedRun, [])
-  const playback = usePlayback(run)
-  const selection = useSelection(run)
-  const filter = useFilter(run)
+  // What the page asks for, and what the last visit left behind (M6-T1). Both are
+  // read once: a URL is not state that can change under a mount, and a snapshot is
+  // the *previous* session's answer, not a live source. Every child takes the run
+  // by reference.
+  const storage = useMemo(() => browserStorage(), [])
+  const saved = useMemo(() => readStoredSnapshot(storage), [storage])
+  const boot = useMemo(() => bootState(currentSearch(), saved, MOUNTED_RUN), [saved])
+  const run = boot.run
+  const restored = boot.restored
+
+  const playback = usePlayback(run, restored?.playback)
+  const selection = useSelection(run, restored?.selection)
+  const filter = useFilter(run, restored?.filter)
   // The HUD's summary (M4-T6) is a pure function of the run, derived once for the
   // life of the mount — outside React state on purpose: it must not move with the
   // playhead or the lens, and there is nothing to invalidate it.
@@ -107,6 +113,17 @@ export default function App() {
   // The criterion report (M5-T4) is the same kind of fact — a function of the run
   // alone — and the rail is its caption. Derived once: no playhead, no lens.
   const insight = useMemo(() => evaluateSpatialCriterion(run), [run])
+  // The autosave (M6-T1) writes the view a burst at a time; the viewport reports
+  // the camera into it because only the viewport holds one.
+  const autosave = useAutosave({
+    run,
+    trace: boot.trace,
+    elapsedMs: playback.state.playhead.elapsedMs,
+    speed: playback.state.playhead.speed,
+    filter: filter.filter,
+    selection: selection.agentId,
+    camera: restored?.camera ?? DEFAULT_CAMERA_SNAPSHOT,
+  })
 
   return (
     <div className="app">
@@ -123,6 +140,8 @@ export default function App() {
           selectedAgentId={selection.agentId}
           onSelectAgent={selection.toggle}
           filter={filter.filter}
+          initialCamera={restored?.camera ?? null}
+          onCameraChange={autosave.onCameraChange}
         />
         <RunHud summary={summary} />
         {selection.agentId === null && (

@@ -532,6 +532,13 @@ describe('findHandAuthoredCoordinates (M2-T5)', () => {
       'src/insight/facts.ts',
       'src/insight/access.ts',
       'src/insight/report.ts',
+      // The persistence layer (M6-T1) saves and restores a *view*, not a scene: it
+      // carries the settled camera's numbers through unchanged and seeds the camera
+      // from the scene plan, so it places nothing of its own.
+      'src/persist/snapshot.ts',
+      'src/persist/restore.ts',
+      'src/persist/storage.ts',
+      'src/persist/boot.ts',
     ]
     for (const relative of dataLayer) {
       const source = readFileSync(resolve(root, relative), 'utf8')

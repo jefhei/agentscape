@@ -16,7 +16,9 @@ export {
   mountTrace,
   parseScaleTrace,
   parseTraceRequest,
+  readTraceParam,
   scaleTraceRun,
+  traceRequestQuery,
 } from './traceQuery.ts'
 
 export type {

@@ -154,10 +154,22 @@ export interface OrbitDelta {
   dyPx: number
 }
 
-/** Optional starting state for {@link createOrbitCamera}. */
+/**
+ * Optional starting state for {@link createOrbitCamera}.
+ *
+ * The opening shot is the plan's own framing; these overrides exist so a
+ * **restored** view (M6-T1's autosave) can start where the viewer left the camera
+ * without a second creation path. Only the live pose is overridden — the
+ * `base*` opening shot stays the plan's, so "reset" still means "back to the
+ * shot the scene was framed with".
+ */
 export interface OrbitOptions {
   /** Starting dolly; clamped to the range. Default `1` (the opening shot). */
   zoom?: number
+  /** Starting azimuth, degrees; wrapped into `[0, 360)`. Default: the plan's. */
+  azimuthDeg?: number
+  /** Starting elevation, degrees; clamped to the tilt limits. Default: the plan's. */
+  elevationDeg?: number
 }
 
 /** What the camera bar prints — the same derivation the controls act on. */
@@ -272,12 +284,22 @@ export function createOrbitCamera(
   const declared = finite(camera.distance, 0)
   const baseDistance =
     declared > 0 ? declared : spherical.distance > 0 ? spherical.distance : 1
-  const azimuthDeg =
+  const planAzimuthDeg =
     spherical.distance > 0 ? spherical.azimuthDeg : normalizeAzimuth(CAMERA_AZIMUTH_DEG)
-  const elevationDeg =
+  const planElevationDeg =
     spherical.distance > 0
       ? spherical.elevationDeg
       : clampElevation(CAMERA_ELEVATION_DEG)
+  // The opening shot is the plan's, always — an override moves the *live* pose only,
+  // so "reset" still returns to the framing the scene was composed with.
+  const azimuthDeg =
+    options.azimuthDeg === undefined
+      ? planAzimuthDeg
+      : normalizeAzimuth(options.azimuthDeg)
+  const elevationDeg =
+    options.elevationDeg === undefined
+      ? planElevationDeg
+      : clampElevation(options.elevationDeg)
   const fovValue = finite(camera.fov, 0)
   const fov = fovValue > 0 ? fovValue : 55
   const nearValue = finite(camera.near, CAMERA_NEAR)
@@ -285,8 +307,8 @@ export function createOrbitCamera(
 
   return {
     target,
-    baseAzimuthDeg: azimuthDeg,
-    baseElevationDeg: elevationDeg,
+    baseAzimuthDeg: planAzimuthDeg,
+    baseElevationDeg: planElevationDeg,
     azimuthDeg,
     elevationDeg,
     zoom: clamp(finite(options.zoom ?? 1, 1), ORBIT_MIN_ZOOM, ORBIT_MAX_ZOOM),

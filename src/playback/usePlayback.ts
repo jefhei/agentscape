@@ -35,7 +35,12 @@ import {
   playbackFrame,
   reducePlayback,
 } from './playback.ts'
-import type { PlaybackAction, PlaybackState, Scrubber } from './playback.ts'
+import type {
+  PlaybackAction,
+  PlaybackOptions,
+  PlaybackState,
+  Scrubber,
+} from './playback.ts'
 
 /** What a component gets from {@link usePlayback}. */
 export interface PlaybackController {
@@ -53,9 +58,19 @@ export interface PlaybackController {
  * Hold and drive a run's transport. The run is the only dependency: changing it
  * resets the transport to a paused playhead at `0`, which is what loading a new
  * trace should do.
+ *
+ * `options` seeds the **initial** transport only (M6-T1 restores a saved playhead
+ * and speed there). A later run swap deliberately does *not* re-apply them: a
+ * position from another trace means nothing on a new timeline, and a swap is not a
+ * boot.
  */
-export function usePlayback(model: TraceModel): PlaybackController {
-  const [state, setState] = useState<PlaybackState>(() => createPlayback(model))
+export function usePlayback(
+  model: TraceModel,
+  options: PlaybackOptions = {},
+): PlaybackController {
+  const [state, setState] = useState<PlaybackState>(() =>
+    createPlayback(model, options),
+  )
 
   const dispatch = useCallback((action: PlaybackAction) => {
     setState((current) => reducePlayback(current, action))

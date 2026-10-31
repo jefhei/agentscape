@@ -452,6 +452,66 @@ export function flyVelocity(fly: FlyCamera, axes: FlyAxes, boost = false): Vec3 
 }
 
 /**
+ * The eye `position`, pulled back onto the flight envelope's surface when it lies
+ * outside it. The one place the envelope is enforced (every movement goes through
+ * it), so a restored pose cannot land somewhere a move could not.
+ */
+export function confineToEnvelope(fly: FlyCamera, position: Vec3): Vec3 {
+  const wanted: Vec3 = {
+    x: finite(position.x, fly.position.x),
+    y: finite(position.y, fly.position.y),
+    z: finite(position.z, fly.position.z),
+  }
+  const fromHome = distanceBetween(wanted, fly.home)
+  const envelope = finite(fly.envelopeRadius, FLY_MIN_ENVELOPE)
+  if (fromHome <= envelope || !(fromHome > 0)) return wanted
+  const pull = envelope / fromHome
+  return {
+    x: fly.home.x + (wanted.x - fly.home.x) * pull,
+    y: fly.home.y + (wanted.y - fly.home.y) * pull,
+    z: fly.home.z + (wanted.z - fly.home.z) * pull,
+  }
+}
+
+/**
+ * Move the eye to an absolute world position, confined to the envelope. The
+ * absolute twin of the offset path below; a position the camera already holds is
+ * an identity (same object), so a re-restore never re-renders the scene.
+ */
+export function flyMoveTo(fly: FlyCamera, position: Vec3): FlyCamera {
+  const confined = confineToEnvelope(fly, position)
+  if (
+    confined.x === fly.position.x &&
+    confined.y === fly.position.y &&
+    confined.z === fly.position.z
+  ) {
+    return fly
+  }
+  return { ...fly, position: confined }
+}
+
+/** A pose a fly camera can be restored to (M6-T1's autosave). */
+export interface FlyPose {
+  position: Vec3
+  yawDeg: number
+  pitchDeg: number
+}
+
+/**
+ * Restore a fly camera to a saved pose, enforcing the same limits every gesture
+ * does: the eye is confined to the envelope, yaw wraps, pitch clamps. The `base*`
+ * opening shot is untouched, so "reset" still returns to the pose the mode switch
+ * handed over. Pure; an unchanged pose returns the **same object**.
+ */
+export function restoreFlyPose(fly: FlyCamera, pose: FlyPose): FlyCamera {
+  const moved = flyMoveTo(fly, pose.position)
+  const yawDeg = normalizeAzimuth(pose.yawDeg)
+  const pitchDeg = clampPitch(pose.pitchDeg)
+  if (moved === fly && yawDeg === fly.yawDeg && pitchDeg === fly.pitchDeg) return fly
+  return { ...moved, yawDeg, pitchDeg }
+}
+
+/**
  * Move the eye by a world-space offset, confined to the flight envelope.
  *
  * The one path every movement takes (held keys, wheel advance), so the envelope
@@ -465,25 +525,11 @@ function translated(fly: FlyCamera, offset: Vec3): FlyCamera {
   const dy = finite(offset.y, 0)
   const dz = finite(offset.z, 0)
   if (dx === 0 && dy === 0 && dz === 0) return fly
-  const wanted: Vec3 = {
+  return flyMoveTo(fly, {
     x: fly.position.x + dx,
     y: fly.position.y + dy,
     z: fly.position.z + dz,
-  }
-  const fromHome = distanceBetween(wanted, fly.home)
-  const envelope = finite(fly.envelopeRadius, FLY_MIN_ENVELOPE)
-  if (fromHome <= envelope || !(fromHome > 0)) {
-    return { ...fly, position: wanted }
-  }
-  const pull = envelope / fromHome
-  return {
-    ...fly,
-    position: {
-      x: fly.home.x + (wanted.x - fly.home.x) * pull,
-      y: fly.home.y + (wanted.y - fly.home.y) * pull,
-      z: fly.home.z + (wanted.z - fly.home.z) * pull,
-    },
-  }
+  })
 }
 
 /**

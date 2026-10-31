@@ -1,9 +1,16 @@
-import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import App, { MOUNTED_RUN } from './App'
 import { FLEET_RUN } from './fixtures/real/index.ts'
 import { buildRunSummary } from './hud/index.ts'
 import { evaluateSpatialCriterion } from './insight/index.ts'
+import {
+  AUTOSAVE_KEY,
+  captureSnapshot,
+  readStoredSnapshot,
+  serializeSnapshot,
+} from './persist/index.ts'
+import type { CameraSnapshot } from './persist/index.ts'
 import { DRAW_CALL_CEILING } from './scene/index.ts'
 
 /** The summary the shell derives for the mounted run (the HUD's own numbers). */
@@ -312,5 +319,98 @@ describe('App shell — the URL-selected scale run (M5-T2)', () => {
         String(MOUNTED_RUN.meta.agentCount),
       )
     })
+  })
+})
+
+describe('App shell — the autosave (M6-T1)', () => {
+  /** A pose and a lens that are unmistakably not the opening shot. */
+  const CAMERA: CameraSnapshot = {
+    mode: 'orbit',
+    orbit: { azimuthDeg: 45, elevationDeg: 20, zoom: 1.5 },
+    fly: { position: { x: 1, y: 2, z: 3 }, yawDeg: 90, pitchDeg: -10 },
+  }
+
+  /** Write a snapshot for `runId` the way a previous visit would have. */
+  function seed(runId = MOUNTED_RUN.id): void {
+    const snapshot = captureSnapshot({
+      runId,
+      trace: null,
+      elapsedMs: 1000,
+      speed: 2,
+      filter: {
+        agentIds: ['a_worker_alpha'],
+        kinds: ['message', 'tool_call'],
+        window: null,
+      },
+      selection: 'a_worker_alpha',
+      camera: CAMERA,
+      savedAt: 1_700_000_000_000,
+    })
+    window.localStorage.setItem(AUTOSAVE_KEY, serializeSnapshot(snapshot))
+  }
+
+  beforeEach(() => {
+    window.localStorage.clear()
+  })
+  afterEach(() => {
+    window.localStorage.clear()
+  })
+
+  it('restores the saved playhead, lens, selection and camera on boot', () => {
+    seed()
+    render(<App />)
+    const viewport = screen.getByTestId('viewport')
+    // The transport opens where it was left, not at 0...
+    expect(viewport).toHaveAttribute('data-playback-elapsed', '1000')
+    expect(screen.getByTestId('transport-speed')).toHaveTextContent('2×')
+    // ...through the saved lens, on the saved agent, from the saved camera.
+    expect(viewport).toHaveAttribute('data-filter-active', 'true')
+    expect(viewport).toHaveAttribute('data-selected-agent', 'a_worker_alpha')
+    expect(screen.getByTestId('detail-panel')).toBeInTheDocument()
+    expect(viewport).toHaveAttribute('data-camera-mode', 'orbit')
+    expect(viewport).toHaveAttribute('data-camera-azimuth', '45')
+    expect(viewport).toHaveAttribute('data-camera-elevation', '20')
+  })
+
+  it('does not resume playback: a reload opens paused', () => {
+    seed()
+    render(<App />)
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+    expect(screen.getByTestId('transport-time')).toHaveTextContent('1.0s / 4:00')
+  })
+
+  it('ignores a save made for a different run', () => {
+    seed(FLEET_RUN.id)
+    render(<App />)
+    const viewport = screen.getByTestId('viewport')
+    expect(viewport).toHaveAttribute('data-run-id', MOUNTED_RUN.id)
+    expect(viewport).toHaveAttribute('data-playback-elapsed', '0')
+    expect(viewport).toHaveAttribute('data-filter-active', 'false')
+    expect(viewport).not.toHaveAttribute('data-selected-agent')
+    expect(screen.queryByTestId('detail-panel')).toBeNull()
+  })
+
+  it('ignores a save it cannot read, and still opens the default run', () => {
+    window.localStorage.setItem(AUTOSAVE_KEY, '{ "version": 99 }')
+    render(<App />)
+    expect(screen.getByTestId('run-hud-title')).toHaveTextContent('fixture: Fan-out')
+    expect(screen.getByTestId('viewport')).toHaveAttribute('data-playback-elapsed', '0')
+  })
+
+  it('writes the current view back to localStorage', async () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Next event' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Tool calls' }))
+    await waitFor(
+      () => {
+        expect(readStoredSnapshot(window.localStorage)).not.toBeNull()
+      },
+      { timeout: 3000 },
+    )
+    const saved = readStoredSnapshot(window.localStorage)
+    expect(saved?.run.id).toBe(MOUNTED_RUN.id)
+    expect(saved?.playback.elapsedMs).toBe(60_000)
+    // The lens really was narrowed: the tool-call kind was dropped.
+    expect(saved?.filter.kinds).toEqual(['message'])
   })
 })
