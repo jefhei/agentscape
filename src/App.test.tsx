@@ -7,11 +7,15 @@ import { evaluateSpatialCriterion } from './insight/index.ts'
 import {
   AUTOSAVE_KEY,
   captureSnapshot,
+  encodeShareView,
+  readShareSeed,
+  readShareView,
   readStoredSnapshot,
   serializeSnapshot,
 } from './persist/index.ts'
 import type { CameraSnapshot } from './persist/index.ts'
 import { DRAW_CALL_CEILING } from './scene/index.ts'
+import { parseTraceRequest } from './trace/index.ts'
 
 /** The summary the shell derives for the mounted run (the HUD's own numbers). */
 const MOUNTED_SUMMARY = buildRunSummary(MOUNTED_RUN)
@@ -412,5 +416,136 @@ describe('App shell — the autosave (M6-T1)', () => {
     expect(saved?.playback.elapsedMs).toBe(60_000)
     // The lens really was narrowed: the tool-call kind was dropped.
     expect(saved?.filter.kinds).toEqual(['message'])
+  })
+})
+
+describe('App shell — the share link (M6-T2)', () => {
+  /** Run `body` with the page URL set to `search`, restoring it afterwards. */
+  function atUrl(search: string, body: () => void): void {
+    window.history.replaceState({}, '', `/${search}`)
+    try {
+      body()
+    } finally {
+      window.history.replaceState({}, '', '/')
+    }
+  }
+
+  /** A clipboard jsdom does not provide; returns the captured writes. */
+  function stubClipboard(): ReturnType<typeof vi.fn> {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    return writeText
+  }
+
+  beforeEach(() => {
+    window.localStorage.clear()
+  })
+  afterEach(() => {
+    window.localStorage.clear()
+    Reflect.deleteProperty(navigator, 'clipboard')
+  })
+
+  it('mounts the share control in the header', () => {
+    render(<App />)
+    expect(screen.getByRole('banner')).toContainElement(
+      screen.getByTestId('share-button'),
+    )
+    // It says nothing until it is used: the header is not a notification area.
+    expect(screen.getByTestId('share-status')).toHaveTextContent('')
+  })
+
+  it('copies a link that names the run, the layout seed and the live view', async () => {
+    const writeText = stubClipboard()
+    render(<App />)
+
+    // A view worth sharing: the playhead moved, the lens narrowed, a camera pose.
+    fireEvent.click(screen.getByRole('button', { name: 'Next event' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Tool calls' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
+    fireEvent.click(screen.getByTestId('share-button'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('share-status')).toHaveTextContent('Link copied')
+    })
+    expect(writeText).toHaveBeenCalledTimes(1)
+    const href = writeText.mock.calls[0][0] as string
+
+    // The run is named by its reference (not by id), so the recipient rebuilds it
+    // through the one ingest path.
+    const search = new URL(href).search
+    expect(parseTraceRequest(search)).toEqual({ kind: 'fixture', shape: 'fan-out' })
+    // The shape is pinned: the scene was settled at the run's seed.
+    expect(readShareSeed(search)).toBe(MOUNTED_RUN.seed)
+    // The view is the autosave's own snapshot, captured at the moment of the click.
+    const shared = readShareView(search)
+    expect(shared?.run.id).toBe(MOUNTED_RUN.id)
+    expect(shared?.run.trace).toBe('trace=fixture:fan-out')
+    expect(shared?.playback.elapsedMs).toBe(60_000)
+    expect(shared?.filter.kinds).toEqual(['message'])
+    expect(shared?.camera?.orbit.zoom).toBeCloseTo(1.15, 6)
+    // ...and the button exposes what it built, so a failed copy is still recoverable.
+    expect(screen.getByTestId('share-link')).toHaveAttribute('data-share-href', href)
+  })
+
+  it('opens a shared link on the sharer’s run, shape and view', () => {
+    const camera: CameraSnapshot = {
+      mode: 'orbit',
+      orbit: { azimuthDeg: 135, elevationDeg: 35, zoom: 2 },
+      fly: null,
+    }
+    const snapshot = captureSnapshot({
+      runId: MOUNTED_RUN.id,
+      trace: 'trace=fixture:fan-out',
+      elapsedMs: 120_000,
+      speed: 4,
+      filter: { agentIds: ['a_worker_alpha'], kinds: ['message'], window: null },
+      selection: 'a_orchestrator',
+      camera,
+      savedAt: 0,
+    })
+    const seed = MOUNTED_RUN.seed + 7
+    const search = `?trace=fixture:fan-out&seed=${seed}&view=${encodeShareView(snapshot)}`
+
+    atUrl(search, () => {
+      render(<App />)
+      const viewport = screen.getByTestId('viewport')
+      // The run the link named reached the renderer...
+      expect(viewport).toHaveAttribute('data-run-id', MOUNTED_RUN.id)
+      // ...settled at the seed the link pinned (the shape is part of the view).
+      expect(viewport).toHaveAttribute('data-layout-seed', String(seed))
+      // ...at the sharer's playhead, through their lens, on their agent, from
+      // their camera.
+      expect(viewport).toHaveAttribute('data-playback-elapsed', '120000')
+      expect(viewport).toHaveAttribute('data-filter-active', 'true')
+      expect(viewport).toHaveAttribute('data-selected-agent', 'a_orchestrator')
+      expect(screen.getByTestId('transport-speed')).toHaveTextContent('4×')
+      expect(viewport).toHaveAttribute('data-camera-azimuth', '135')
+      expect(viewport).toHaveAttribute('data-camera-elevation', '35')
+      expect(screen.getByTestId('camera-zoom')).toHaveTextContent('2.00×')
+    })
+  })
+
+  it('reports the seed the scene was settled at', () => {
+    // The seed is a layout input, not a style knob. The viewport echoes the value
+    // the plan settled at, so a headless probe can see that a link's seed reached
+    // the settlement (the *shape* it produces is gated in `scenePlan.test.ts`,
+    // where jsdom has the pure plan to inspect).
+    const seedAt = (search: string): string => {
+      let seed = ''
+      atUrl(search, () => {
+        const { unmount } = render(<App />)
+        seed = screen.getByTestId('viewport').getAttribute('data-layout-seed') ?? ''
+        unmount()
+      })
+      return seed
+    }
+
+    expect(seedAt('?trace=fixture:fan-out')).toBe(String(MOUNTED_RUN.seed))
+    expect(seedAt(`?trace=fixture:fan-out&seed=${MOUNTED_RUN.seed + 101}`)).toBe(
+      String(MOUNTED_RUN.seed + 101),
+    )
   })
 })

@@ -91,6 +91,13 @@ export interface AutosaveController {
   onCameraChange: (camera: CameraSnapshot) => void
   /** Write the current view now (the endings; also handy in a test). */
   saveNow: () => void
+  /**
+   * Capture the current view without writing it — the share link (M6-T2) needs the
+   * exact value the autosave would write, including the camera only this layer holds.
+   * Stable identity; `savedAt` is the caller's (a share link passes `0`, so the same
+   * view always encodes to the same link).
+   */
+  capture: (savedAt: number) => ViewSnapshot
 }
 
 /**
@@ -130,13 +137,15 @@ export function useAutosave(
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastWritten = useRef<string | null>(null)
 
-  const flush = useCallback(() => {
-    if (timer.current !== null) {
-      clearTimeout(timer.current)
-      timer.current = null
-    }
+  /**
+   * The snapshot the autosave writes and the share link (M6-T2) carries. It reads
+   * the refs rather than props, so a caller may invoke it from an event handler and
+   * get the *current* view, not the one of the render that made the handler. One
+   * capture for both purposes: a shared link and a saved view cannot disagree.
+   */
+  const capture = useCallback((savedAt: number): ViewSnapshot => {
     const source = latest.current
-    const snapshot = captureSnapshot({
+    return captureSnapshot({
       runId: source.run.id,
       trace: source.trace,
       elapsedMs: source.elapsedMs,
@@ -144,8 +153,16 @@ export function useAutosave(
       filter: source.filter,
       selection: source.selection,
       camera: cameraRef.current,
-      savedAt: now(),
+      savedAt,
     })
+  }, [])
+
+  const flush = useCallback(() => {
+    if (timer.current !== null) {
+      clearTimeout(timer.current)
+      timer.current = null
+    }
+    const snapshot = capture(now())
     // The view is what must be new, not the timestamp: a burst that ends on the
     // same view it last wrote is not worth a second write.
     const view = viewKey(snapshot)
@@ -153,7 +170,7 @@ export function useAutosave(
     if (writeStoredSnapshot(storage, snapshot, key) === 'saved') {
       lastWritten.current = view
     }
-  }, [key, now, storage])
+  }, [capture, key, now, storage])
 
   const schedule = useCallback(() => {
     if (timer.current !== null) return
@@ -206,5 +223,5 @@ export function useAutosave(
     [schedule],
   )
 
-  return { onCameraChange, saveNow: flush }
+  return { onCameraChange, saveNow: flush, capture }
 }

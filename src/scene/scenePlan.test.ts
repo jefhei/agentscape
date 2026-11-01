@@ -415,3 +415,38 @@ describe('scene plan — overrides (M3-T6)', () => {
     expect(fallback.withinBudget).toBe(true)
   })
 })
+
+describe('scene plan — a pinned layout seed (M6-T2)', () => {
+  it('settles at the seed it is given and reports it', () => {
+    const run = fixture('fan-out')
+    const pinned = buildScenePlan(run, { settlement: { seed: 1234 } })
+    expect(pinned.seed).toBe(1234)
+    // The plan is the settlement's own output, not a re-derived copy.
+    expect(pinned.layout.seed).toBe(1234)
+    expect(pinned.attributeMap).toEqual(
+      buildScenePlan(run, { settlement: { seed: 1234 } }).attributeMap,
+    )
+  })
+
+  it('is byte-identical for the same seed, whatever produced it', () => {
+    const run = fixture('loop')
+    const a = buildScenePlan(run, { settlement: { seed: 7 } })
+    const b = buildScenePlan(run, { settlement: { seed: 7 } })
+    expect(JSON.stringify(a.layout.nodes)).toBe(JSON.stringify(b.layout.nodes))
+    expect(a.drawCalls).toBe(b.drawCalls)
+  })
+
+  it('moves the cloud for a different seed (the shape is the seed’s, not the run’s)', () => {
+    const run = fixture('fan-out')
+    const own = buildScenePlan(run)
+    const pinned = buildScenePlan(run, { settlement: { seed: run.seed + 1 } })
+    expect(pinned.seed).not.toBe(own.seed)
+    // Same agents, different positions: a shared link that pins a seed really does
+    // reproduce a different settled shape, and every layer follows it.
+    expect(pinned.layout.nodes.map((node) => node.agentId)).toEqual(
+      own.layout.nodes.map((node) => node.agentId),
+    )
+    expect(pinned.layout.nodes).not.toEqual(own.layout.nodes)
+    expect(pinned.nodes.instances).not.toEqual(own.nodes.instances)
+  })
+})

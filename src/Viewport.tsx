@@ -113,6 +113,17 @@ export interface ViewportProps {
    * app 60 times a second.
    */
   onCameraChange?: (camera: CameraSnapshot) => void
+  /**
+   * The layout seed the URL pins (M6-T2), or `null`/omitted for the run's own
+   * contract seed.
+   *
+   * It is an *input* to the settlement, not a style knob: the same trace settled at
+   * a different seed is a different (still deterministic) cloud, so a shared link
+   * that carries a seed reproduces the shape the sharer saw. Everything downstream —
+   * attributes, arcs, glyphs, the camera's framing — is derived from the settled
+   * layout, so passing the seed here is the whole change.
+   */
+  layoutSeed?: number | null
 }
 
 export default function Viewport({
@@ -123,13 +134,23 @@ export default function Viewport({
   filter,
   initialCamera = null,
   onCameraChange,
+  layoutSeed = null,
 }: ViewportProps) {
   const [ready, setReady] = useState(false)
 
-  // One scene pass for the whole run, memoized on the run alone: every plan below
-  // (and the camera) is derived from it. Pure and deterministic, so re-rendering
-  // with the same run rebuilds nothing.
-  const scene = useMemo(() => (run === undefined ? null : buildScenePlan(run)), [run])
+  // One scene pass for the whole run, memoized on the run and the pinned seed
+  // alone: every plan below (and the camera) is derived from it. Pure and
+  // deterministic, so re-rendering with the same run rebuilds nothing.
+  const scene = useMemo(
+    () =>
+      run === undefined
+        ? null
+        : buildScenePlan(
+            run,
+            layoutSeed === null ? {} : { settlement: { seed: layoutSeed } },
+          ),
+    [run, layoutSeed],
+  )
 
   // The reveal is indexed once per scene (the O(n) half of M4-T1's reveal) and
   // then looked up per frame — so scrubbing at 60 fps never re-scans the trace.
@@ -197,6 +218,7 @@ export default function Viewport({
       data-testid="viewport"
       data-run-id={scene?.runId}
       data-draw-calls={scene?.drawCalls}
+      data-layout-seed={scene?.seed}
       data-playback-elapsed={reveal === null ? undefined : Math.round(reveal.elapsedMs)}
       data-reveal-arcs={reveal?.counts.firedArcs}
       data-reveal-glyphs={reveal?.counts.visibleGlyphs}

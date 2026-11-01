@@ -9,6 +9,10 @@
  *   measurement (M5-T2). `&mpa=<1..8>` raises the messages each agent sends.
  * - `?trace=fleet` — the real `debian2_bot` fleet run, built from the committed
  *   `agent_messages` export snapshot (M5-T3).
+ * - `?trace=fixture:<shape>` — one of the four deterministic fixtures (M1-T6).
+ *   Added in M6-T2 so that *every* run the app can mount has a name a link can
+ *   carry: without it, the default fixture — the run most visitors see — could
+ *   not be shared at all.
  *
  * The rules the module keeps:
  *
@@ -30,10 +34,13 @@
  * and what the tests assert.
  */
 
+import { FIXTURE_SHAPES, buildFixture } from '../fixtures/index.ts'
+import type { FixtureShape } from '../fixtures/index.ts'
 import { FLEET_RUN, FLEET_RUN_LABEL } from '../fixtures/real/index.ts'
 import type { TraceModel } from '../model/index.ts'
 import { buildScaleRun } from '../scale/scaleRun.ts'
 import type { ScaleRun } from '../scale/scaleRun.ts'
+import { readQueryParam } from './query.ts'
 
 /** The query parameter that selects a run. */
 export const TRACE_PARAM = 'trace'
@@ -43,6 +50,9 @@ export const SCALE_TRACE_SCHEME = 'scale:'
 
 /** The value that selects the real fleet run. */
 export const FLEET_TRACE_VALUE = 'fleet'
+
+/** The prefix that marks a deterministic fixture in the `trace` parameter. */
+export const FIXTURE_TRACE_SCHEME = 'fixture:'
 
 /** The query parameter that raises messages-per-agent (default {@link DEFAULT_MESSAGES_PER_AGENT}). */
 export const SCALE_MESSAGES_PARAM = 'mpa'
@@ -78,8 +88,15 @@ export interface FleetTraceRequest {
   label: string
 }
 
+/** A parsed `?trace=fixture:<shape>` request. */
+export interface FixtureTraceRequest {
+  kind: 'fixture'
+  /** Which deterministic fixture to build. */
+  shape: FixtureShape
+}
+
 /** What the URL asked for. */
-export type TraceRequest = ScaleTraceRequest | FleetTraceRequest
+export type TraceRequest = ScaleTraceRequest | FleetTraceRequest | FixtureTraceRequest
 
 /** A built run, plus what asked for it. */
 export interface MountedTrace {
@@ -93,34 +110,12 @@ export interface MountedTrace {
   scale?: ScaleRun
 }
 
-/** The raw value of `name` in an `a=1&b=2` query string, or `null`. */
-function rawParam(search: string, name: string): string | null {
-  // Accept a leading `?` (or a full URL's tail) exactly as `location.search` has it.
-  let query = search
-  const question = query.indexOf('?')
-  if (question >= 0) query = query.slice(question + 1)
-  const hash = query.indexOf('#')
-  if (hash >= 0) query = query.slice(0, hash)
-  if (query === '') return null
-
-  for (const pair of query.split('&')) {
-    const equals = pair.indexOf('=')
-    if (equals < 0) continue
-    const key = pair.slice(0, equals)
-    if (key !== name) continue
-    return decodeSafe(pair.slice(equals + 1))
-  }
-  return null
-}
-
-/** `decodeURIComponent`, but a malformed escape reads as the raw text (never throws). */
-function decodeSafe(value: string): string {
-  try {
-    return decodeURIComponent(value)
-  } catch {
-    return value
-  }
-}
+/**
+ * The one query-string reader is `./query.ts` (M6-T2): the trace selector and the
+ * share link read parameters through the same code, and this module only interprets
+ * what it finds. Re-exported so the barrel's surface is unchanged.
+ */
+export { readQueryParam } from './query.ts'
 
 /** A whole number in `[1, max]`, or `null`. */
 function boundedInt(raw: string, max: number): number | null {
@@ -137,7 +132,7 @@ function parseScaleValue(trace: string, search: string): ScaleTraceRequest | nul
   const agents = boundedInt(trace.slice(SCALE_TRACE_SCHEME.length), MAX_SCALE_AGENTS)
   if (agents === null) return null
 
-  const messages = rawParam(search, SCALE_MESSAGES_PARAM)
+  const messages = readQueryParam(search, SCALE_MESSAGES_PARAM)
   const messagesPerAgent =
     messages === null
       ? DEFAULT_MESSAGES_PER_AGENT
@@ -151,6 +146,25 @@ function parseScaleValue(trace: string, search: string): ScaleTraceRequest | nul
   }
 }
 
+/** Whether `raw` names one of the deterministic fixtures. */
+function isFixtureShape(raw: string): raw is FixtureShape {
+  return (FIXTURE_SHAPES as readonly string[]).includes(raw)
+}
+
+/**
+ * Parse a `fixture:<shape>` value, or `null` when it is not one.
+ *
+ * The shape must be one the registry knows: a `fixture:` value naming a fixture
+ * that does not exist is a mistyped link, not a request for something to invent,
+ * so it reads as `null` (the default mount) exactly like any other unknown scheme.
+ */
+function parseFixtureValue(trace: string): FixtureTraceRequest | null {
+  if (!trace.startsWith(FIXTURE_TRACE_SCHEME)) return null
+  const shape = trace.slice(FIXTURE_TRACE_SCHEME.length)
+  if (!isFixtureShape(shape)) return null
+  return { kind: 'fixture', shape }
+}
+
 /**
  * Parse what run the query string asks for.
  *
@@ -162,13 +176,13 @@ function parseScaleValue(trace: string, search: string): ScaleTraceRequest | nul
  */
 export function parseTraceRequest(search: string): TraceRequest | null {
   if (typeof search !== 'string') return null
-  const trace = rawParam(search, TRACE_PARAM)
+  const trace = readQueryParam(search, TRACE_PARAM)
   if (trace === null) return null
 
   if (trace === FLEET_TRACE_VALUE) {
     return { kind: 'fleet', label: FLEET_RUN_LABEL }
   }
-  return parseScaleValue(trace, search)
+  return parseFixtureValue(trace) ?? parseScaleValue(trace, search)
 }
 
 /**
@@ -191,7 +205,7 @@ export function parseScaleTrace(search: string): ScaleTraceRequest | null {
  * mount the default" — never "silently mount something else".
  */
 export function readTraceParam(search: string): string | null {
-  return typeof search === 'string' ? rawParam(search, TRACE_PARAM) : null
+  return typeof search === 'string' ? readQueryParam(search, TRACE_PARAM) : null
 }
 
 /**
@@ -205,6 +219,9 @@ export function readTraceParam(search: string): string | null {
 export function traceRequestQuery(request: TraceRequest | null): string | null {
   if (request === null) return null
   if (request.kind === 'fleet') return `${TRACE_PARAM}=${FLEET_TRACE_VALUE}`
+  if (request.kind === 'fixture') {
+    return `${TRACE_PARAM}=${FIXTURE_TRACE_SCHEME}${request.shape}`
+  }
   const base = `${TRACE_PARAM}=${SCALE_TRACE_SCHEME}${request.agents}`
   return request.messagesPerAgent === DEFAULT_MESSAGES_PER_AGENT
     ? base
@@ -229,6 +246,12 @@ export function mountTrace(search: string): MountedTrace | null {
   if (request === null) return null
   if (request.kind === 'fleet') {
     return { kind: 'fleet', run: FLEET_RUN, label: FLEET_RUN_LABEL }
+  }
+  if (request.kind === 'fixture') {
+    // The fixture registry builds through the real ingest path (M1-T6), so a
+    // fixture link mounts the same run the default mount does — just named.
+    const run = buildFixture(request.shape).run
+    return { kind: 'fixture', run, label: run.label }
   }
   const scale = buildScaleRun(request)
   return { kind: 'scale', run: scale.run, label: request.label, scale }

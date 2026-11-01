@@ -46,6 +46,48 @@ body {
   letter-spacing: -0.02em;
 }
 
+/* The share control (M6-T2) sits at the far end of the header: the title and thesis
+   describe the project, the button acts on the run on screen. */
+.share-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.share-button {
+  padding: 0.18rem 0.6rem;
+  border: 1px solid #232b3d;
+  border-radius: 999px;
+  background: #11151e;
+  color: #8fc3ff;
+  font: inherit;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.share-button:hover {
+  border-color: #33405c;
+  color: #ffffff;
+}
+
+.share-button[data-status='copied'] {
+  color: #9ce0b4;
+  border-color: #2c4636;
+}
+
+.share-button[data-status='failed'] {
+  color: #ffb4a8;
+  border-color: #4a2c28;
+}
+
+.share-status {
+  min-width: 0;
+  font-size: 0.66rem;
+  color: #7d8aa3;
+}
+
 .app-tagline {
   margin: 0;
   font-size: 0.85rem;

@@ -1,5 +1,5 @@
 import './App.css'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { buildFixture } from './fixtures/index.ts'
 import type { FixtureShape } from './fixtures/index.ts'
 import { useFilter } from './filter/index.ts'
@@ -12,12 +12,15 @@ import {
   bootState,
   browserStorage,
   readStoredSnapshot,
+  shareHref,
   useAutosave,
 } from './persist/index.ts'
+import { traceRequestQuery } from './trace/index.ts'
 import AgentDetailPanel from './ui/AgentDetailPanel.tsx'
 import FilterBar from './ui/FilterBar.tsx'
 import InsightRail from './ui/InsightRail.tsx'
 import RunHud from './ui/RunHud.tsx'
+import ShareLink from './ui/ShareLink.tsx'
 import TransportBar from './ui/TransportBar.tsx'
 import Viewport from './Viewport'
 
@@ -38,9 +41,30 @@ const DEFAULT_FIXTURE: FixtureShape = 'fan-out'
 /** The run the app mounts — built through the real ingest path (M1-T4 + M1-T5). */
 export const MOUNTED_RUN = buildFixture(DEFAULT_FIXTURE).run
 
+/**
+ * The canonical `?trace=` fragment that names the default mount (M6-T2).
+ *
+ * A share link must name the run it shows, so *every* run the app can mount needs
+ * a reference — including this one, which used to be nameless (it was simply
+ * whatever loaded with no URL). `traceRequestQuery` returns a fragment for every
+ * fixture shape by construction, so the fallback below is unreachable; it is there
+ * because the type is `string | null` for the parser's general contract.
+ */
+const DEFAULT_TRACE =
+  traceRequestQuery({ kind: 'fixture', shape: DEFAULT_FIXTURE }) ?? ''
+
 /** The page's query string, or `''` outside a browser (tests, SSR). */
 function currentSearch(): string {
   return typeof window === 'undefined' ? '' : window.location.search
+}
+
+/**
+ * The page's own address without its query or fragment — the base a share link is
+ * built on (`https://host/path/`). `''` outside a browser.
+ */
+function currentBase(): string {
+  if (typeof window === 'undefined') return ''
+  return `${window.location.origin}${window.location.pathname}`
 }
 
 /**
@@ -91,6 +115,13 @@ function currentSearch(): string {
  * app is used. The camera is the one part the shell cannot read — it lives in the
  * viewport — so the viewport reports it through a stable callback into the
  * autosave's ref, which keeps a drag from re-rendering the shell.
+ *
+ * Since M6-T2 it also **shares**: {@link ShareLink} puts a URL on the clipboard
+ * that names the run, the layout seed and the same view the autosave would write,
+ * so a recipient rebuilds the trace through the ingest path and settles it at the
+ * sharer's seed. The shell supplies the run's reference (the URL's, or the default
+ * fixture's own) and the seed the scene is settled with; the link's *contents* are
+ * `src/persist/share.ts`'s business.
  */
 export default function App() {
   // What the page asks for, and what the last visit left behind (M6-T1). Both are
@@ -99,9 +130,19 @@ export default function App() {
   // by reference.
   const storage = useMemo(() => browserStorage(), [])
   const saved = useMemo(() => readStoredSnapshot(storage), [storage])
-  const boot = useMemo(() => bootState(currentSearch(), saved, MOUNTED_RUN), [saved])
+  const boot = useMemo(
+    () =>
+      bootState(currentSearch(), saved, MOUNTED_RUN, { fallbackTrace: DEFAULT_TRACE }),
+    [saved],
+  )
   const run = boot.run
   const restored = boot.restored
+  // The one reference that names what is mounted — the URL's, or the default's
+  // (M6-T2). The autosave writes it and a share link carries it.
+  const trace = boot.trace ?? DEFAULT_TRACE
+  // The seed the shape is settled with: the link's if it pinned one, else the run's
+  // own contract seed. `buildScenePlan` reports the same value back as `plan.seed`.
+  const layoutSeed = boot.seed ?? run.seed
 
   const playback = usePlayback(run, restored?.playback)
   const selection = useSelection(run, restored?.selection)
@@ -117,13 +158,26 @@ export default function App() {
   // the camera into it because only the viewport holds one.
   const autosave = useAutosave({
     run,
-    trace: boot.trace,
+    trace,
     elapsedMs: playback.state.playhead.elapsedMs,
     speed: playback.state.playhead.speed,
     filter: filter.filter,
     selection: selection.agentId,
     camera: restored?.camera ?? DEFAULT_CAMERA_SNAPSHOT,
   })
+  // A share link (M6-T2) is built on click, not on render: it names the *live*
+  // view (which moves every frame while a run plays), and building it is one
+  // base64 encode of the very snapshot the autosave would write.
+  const capture = autosave.capture
+  const shareHrefFor = useCallback(
+    () =>
+      shareHref(currentBase(), {
+        trace,
+        seed: layoutSeed,
+        snapshot: capture(0),
+      }),
+    [capture, layoutSeed, trace],
+  )
 
   return (
     <div className="app">
@@ -132,6 +186,7 @@ export default function App() {
         <p className="app-tagline">
           3D spatial trace visualizer for multi-agent AI runs
         </p>
+        <ShareLink buildHref={shareHrefFor} />
       </header>
       <main className="app-main">
         <Viewport
@@ -142,6 +197,7 @@ export default function App() {
           filter={filter.filter}
           initialCamera={restored?.camera ?? null}
           onCameraChange={autosave.onCameraChange}
+          layoutSeed={layoutSeed}
         />
         <RunHud summary={summary} />
         {selection.agentId === null && (

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { FIXTURE_SHAPES, buildFixture } from '../fixtures/index.ts'
 import { FLEET_RUN, FLEET_RUN_LABEL } from '../fixtures/real/index.ts'
 import {
   DEFAULT_MESSAGES_PER_AGENT,
@@ -11,6 +12,7 @@ import {
   parseScaleTrace,
   parseTraceRequest,
   scaleTraceRun,
+  traceRequestQuery,
 } from './traceQuery.ts'
 
 /**
@@ -23,6 +25,9 @@ import {
  * never exceed its bound, and must return `null` (the default mount) rather than
  * something half-understood for every input it does not recognise.
  */
+
+/** The fan-out fixture's run id — what a `fixture:fan-out` link must mount. */
+const FAN_OUT_ID = buildFixture('fan-out').run.id
 
 describe('parseScaleTrace (M5-T2)', () => {
   it('reads a scale run out of the trace parameter', () => {
@@ -198,6 +203,49 @@ describe('mountTrace (M5-T3)', () => {
     expect(() => mountTrace('?trace=%E0%A4%A')).not.toThrow()
     expect(mountTrace('?trace=%E0%A4%A')).toBeNull()
     expect(() => parseTraceRequest('?trace&trace=fleet')).not.toThrow()
+  })
+})
+
+// ── fixture links (M6-T2) ───────────────────────────────────────────────────
+
+describe('fixture links (M6-T2)', () => {
+  it('names every deterministic fixture', () => {
+    for (const shape of FIXTURE_SHAPES) {
+      expect(parseTraceRequest(`?trace=fixture:${shape}`)).toEqual({
+        kind: 'fixture',
+        shape,
+      })
+    }
+  })
+
+  it('refuses a fixture the registry does not have', () => {
+    expect(parseTraceRequest('?trace=fixture:')).toBeNull()
+    expect(parseTraceRequest('?trace=fixture:pentagram')).toBeNull()
+    expect(parseTraceRequest('?trace=fixture:Fan-out')).toBeNull()
+    // A near-miss scheme is not a fixture either.
+    expect(parseTraceRequest('?trace=fixtures:loop')).toBeNull()
+  })
+
+  it('mounts the same run the fixture registry builds (real ingest, not a copy)', () => {
+    const mounted = mountTrace('?trace=fixture:loop')
+    const built = buildFixture('loop').run
+    expect(mounted?.kind).toBe('fixture')
+    expect(mounted?.run.id).toBe(built.id)
+    expect(mounted?.run.label).toBe(built.label)
+    expect(mounted?.run.source).toBe('agent_messages')
+    // Mounting twice is byte-identical: a link is reproducible.
+    expect(JSON.stringify(mountTrace('?trace=fixture:loop')?.run)).toBe(
+      JSON.stringify(built),
+    )
+  })
+
+  it('round-trips through the canonical fragment, beside a seed', () => {
+    const request = parseTraceRequest('?trace=fixture:fan-out&seed=42')
+    const query = traceRequestQuery(request)
+    expect(query).toBe('trace=fixture:fan-out')
+    expect(parseTraceRequest(`?${query}`)).toEqual(request)
+    // The seed is a sibling parameter: it must not disturb the trace parse.
+    expect(mountTrace(`?${query}&seed=42`)?.run.id).toBe(FAN_OUT_ID)
   })
 })
 
